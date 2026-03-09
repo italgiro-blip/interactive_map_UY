@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIG AECA-MI | Pro</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <header class="map-overlay-header">
+        <div class="header-content">
+            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARMAAAC3CAMAAAAGjUrGAAAA/1BMVEX///8AOKgAL6ZzhsVxhMX8/f8AMqgAJaPAyuV7PwD80Rb/1xfm7PcAHqJ0NQByMgB4OwD/2RfjthLNng+/jw1xKgDzxxVzLwByLQD1yRV+QgDVpxD59/SgZwChbQj0yBW6ig2ddlm/qJfZzMPy7entwBSygQuaZQeKUgStjniQWQXZrBHtvwDOoA/m3dXTxLlnDgCUaEgAD5/r492tdwDMuauymY7ElA60gAC1mobJtqpsIQCTWwCBSBSkg3SKWTSzlX2YblCngmScbTChdUSnhm7Lu7aFUCSgbiGWZTF/Rg+geFN/SSp5PRCac1/HsaCldB6sj4SSXRpmAwAAAJ0VakpFAAAKJ0lEQVR4nO2da3+aWB6A2Z3JzsLpngvKRVBiRAQxmjhi8EJjTSe3dppuu/v9P8ueA5qoxDSzL6qS//PrC9TKD578L+ccIJEkAAAAAAAAAAAAYMFg1wewh5z1dn0E+8f4bNdHsA9Um6uvTsa7Oo59orFWQm7nKy+qkw/Vn3w0+4GxGidV4/bpRcOc/fSj2Qvc89U46WnBY2TMjPc7OJ59oG2uVtWhFrmLzTkJ3ee+8AaYB1crrz6YpUm25U4D/3V7ePfrLwfEq5zQ2sqQpG902tnWCR5dPf+NnJPf/35AvOaMPpDIf6qyJvE+Zlsatl/r5F9/OyC2ncVqp+lpuJMsy2xTI14t3XJNcvrH+reqW/pyMZxIJyu9po8tpbaoptyEWk4/G2PCamvfcdtbdlYQJ81p43G7N6UOi27S7QYhaifdvKXBupOxsW1nBXEinZ33HxPoGpOYjVITV5ioxxciKDQh6ilZBrfnWyeHRXEinRjhoulKTVPGHku7zy0lKhOj+z7F9RUnDc3YPg8qjJOqHJRPqstAoSFCIX+TyNzJnQgTGduPudOcTf377bsqjBMxJvP8rIr0uIGYnV6KDe6Eh8cnKmOdLcZsQ8NwohfWmorjRGobllK+TDdlWcYVNhqcGdwJKvVOsEwDpHxOA+pEw47deGFHBXIivedN+PS7KCNX3EGLKSdjLJyof2JZvD5Niy3G2Ff6L+2nSE56GrUqLPomWjAPFB3FX2TuRFG4EuEm5oOWa55WPvObL+2nSE74kINax0y9Fzkj0zpSzNQJCqgsWwg5Uu8TFkrimxd3Uygn0oxSS0dK9CAigyKPZE4cKtMyUi7HU15qfXT68PJeDtzJRg7wkYmQwjoyjwzc6SycxFh0nZhyU1wJSpbDlOHJrN/Or6kcuJPrjZY60YQUBSkOkWnEXaT1pEN4ha2L2OFK2GhhYSibxAqm58bXYjlxtQ0pc5xKUZiNqeXzaDFUhioGVUOSKVHUrF27M43K9aTRa1abG/PjA3ci3Rrj5pF01HQ5fEOqirYrpKCKTynBVuA7LZUGlC6UKGIAWx1yI9hX+8+uFhy6E3ca1lpRNCp1u6WR88fFwDWWUhTLsXWFIcUrJeZSCRu1J+2+aVDZKCtbxvcHv87W1mhSt3khZYwhdBrffaGpFFbyPaZkIKaGOIsS1cAEp/9DZcm2NaVfD4nnzqAxNTAmxEpats6tIM8SfTiIyksjmZa65nAliviQY0QKqxX48nr1ax+bvLRSTIK6xxuxIU7aXlPCi2455pnjiOYjk4AX3lrBL2xU3WtT9BWZksRmLT7LiZnIpsfcQcKHymz+nyi2uohVkjdwv0G1gdMYoDjoBtRnyGsF/ORTJ7EVlisIhRXKW1Fo8wTrPt9xCkf1SsuKBbaIp0RJV1XLDjeiO7GqxkEZ2TINyx7jFTeZ/Hh3BWGIRVHBlu8zRWd2qxXrtqKU9HKr1WGegizZqXc99d8Xuz7Qn0bTnczCKFb5zJiXU6UcE6MuNlA5IrhbEr0ndWbM2l/dFxcLisBR7+bbZ3/U5aGAhIS6J1KmS4KoI8pJKZItu6KIec8iuYhp4vn4rKDNuOk2rj7y4KiwdMyWwpys3XT4MDZtOzof0wm8hRM5K8aGZsyuixUyg2F7ZmpBFAvKK8TBxthkScUkmxiGppmz9rAoYpo9PnUxplOND2TXeXRyLJLo0Yke6d4SXdePK3ondoJ+e9IripIFPHtObgn3Qh/TAlceB698KlipLxWp5Wy8wtMLVdQ4unu4KFTmrFPtDdt9ohE5FUPURVzUHafecpzywkmpI6oN8uxR7fO3m96bGLY1h1+CABOKF/HgKYzpvPoqXhYeTkUttUJqPhQ3OHJc8CkNF8Bbb+pEZ17cKvF/OstqikwIFotL5HrXR/qzuElUsVRQtyh2xERH9RyrVedE8sjz0iFbSLOig98XfFK84LLMa0XHJ1TGDguzAhKHTqvlJN2suhA58FqLmaI2L76VoxlPGzUkIg4sXkn8NHuQonY6HsqqS0Bl6rBKOSAiWqgpt8+KXWVnp6zipEZkg3cdFjuZCMXuLJpOIALE6PLBrloP08KCTW1e4CcU5qesu6wVLaYgFeOkglZW2dTQS8TnND4W7VhR41Zi8dGdNn9mb0eHxDYl3zrIEZfNDVPDgSKU8LOnfMCWZRDTWxHPo1BEyu2FX1YVlnLaHYVGXsq73/9xQGxRMok9i1IDX0161Us+OVazdUgsO+WOqnZi30wUYUdIMYZSb3J5f+fcfZx/uxh/DLRc+hz69R3BRT0m1LwdiorpjlAaJXwQ4lgBUkuOyUuHReUOW0gx1wdsrpV7MOGwnTQnw6/tJAqwIQ/TN6oJyqKEYruLCS8kXZFGfMxiRCKNEizTzedVcmOVw3Yi9a7ODWxoeHkr1sMpS6OEhjqz0nsKSul1dIePWiyVpZGyecdjdfM+rgN3Ii5jNBqPP+ibmIkoofRPXQQI7mZOjIqd3qrE80pEivaDyxgH72SVZpJGiTFrfmQs5EO0FkqdUKaIPmzcfPcYjxT6g0ebCuWkr/AoodpY6sXIE9fSfZbFCZ/rcClmT7qsi0gh2+60L56Tic2VkFueGRenqQQqp7lD+2V0nLVhyU10FmLtxclOgZwMIpVQLQ2Bz9l9ffTyVDgx3LnCWrzKis+qDzFLMH1pplMgJ/cqJnIWADWm87jQXNcWTrTBYJRWlE/phzc1xTdP3oSTcR1rV9mPvzlivNGQD9KgzrgTXJVEwJBlw2n2bX86fANOehbFy1F6LxapIvNEibiTdJAWIuRTvFxfa9QSc/v6Y2GcvJ/OH2sEd+JTUVGle+4kNdGLWAU/jesH99r228uL4uR6NRm4Ez4nFFuXSgmT9F7PG55PBD+VkfF/tj6GUBAnZ+9XU2FQV4y0yUgTr4vNrO5OItbC06chbA9vu1xcDCfN9Z/5UeSRzIRb6mJtocv1UYBXJ4DjQj83unlyjo219L1qZGO8fHfwXaVrc51CO9nkro4XJbRmryykVb9HxksPMxXaiZOYi7uzrkraytLAoIZfcbnr3X9/OyBeqaSZULzIi4vy2trilfyKX5tz9M9D4pVOroPpUsRZbbraXib51de3wZn2dOYDGa9WUnda7Mtc2zg7bz+deHWt+0ruS3O/4tJcv+I5WyuqbkFv6/trXK8137eZOZs0in//wF+mwDes/d9AtgAAAAAAAAAAcBjsevFzD5F2vUi+h0i7vpiyh4CTPOAkDzjJA07ygJM84CQPOMkDTvKAkzzgJA84yQNO8oCTPOAkDzjJA07ygJM80q5/OcAecli/ceLnsOvLBgAAAAAAAAAAAAAAAAAAFJRd/5G1PUTa9R/j20Pg+k4ecJIHnOQBJ3nASR5wkgec5AEnecBJHnCSB5zkASd5wEkecJIHnOQBJ3nASR5YZ8sj/QJssuslcgAAAAAAAAAAAAAAAAAAgLfC/wCiD5hXCuzQ1QAAAABJRU5ErkJggg==" alt="Galo" class="map-logo">
+            <h1 id="mainTitle">Área de Estadística y Criminología Aplicada (AECA)</h1>
+        </div>
+    </header>
+
+    <aside class="controls">
+        <h3 style="color: #D9D9D9; font-size: 14px; letter-spacing: 1px; margin-bottom: 15px;">Parámetros Visuales</h3>
+        
+        <button type="button" id="btnCargarGeoJSON" class="map-button">Importar Dataset</button>
+
+        <div class="separator"></div>
+
+        <label>MAPA BASE
+            <select id="baseMapSelect">
+                <option value="dark">Modo Escuro (CartoDB)</option>
+                <option value="streets">OpenStreetMap (Rutas)</option>
+                <option value="satellite">Satélite (Esri)</option>
+            </select>
+        </label>
+
+        <label>MÉTODO ESTATÍSTICO
+            <select id="classificationSelect">
+                <option value="jenks" selected>Optimizar Grupos(Jenks)</option>
+                <option value="equal">Rangos Uniformes</option>
+                <option value="quartiles">Distribución por Cuartos</option>
+            </select>
+        </label>
+
+        
+            <label for="paletteSelect">Esquema Cromático
+</label>
+<select id="paletteSelect">
+    <option value="reds">Escala de Rojos</option>
+    <option value="purples">Escala de Purpúreos</option>
+    <option value="greens">Escala de Verdes</option>
+    <option value="yellows">Escala de Amarillos</option>
+    <option value="blues" selected>Escala de Azules</option>
+</select>
+        </label>
+
+        <label> Seleccionar Entidad Administrativa<select id="labelSelect">
+
+                <option value="">Procesando información...</option>
+            </select>
+        </label>
+
+        <div id="infoBox" class="info-card">
+            <p id="detailNome"><b>Unidad:</b> --</p>
+            <p id="detailTaxa"><b>Valor:</b> --</p>
+        </div>
+    </aside>
+
+    <div class="side-images">
+        <img src="https://personasausentes.minterior.gub.uy/sites/default/files/guia_practica/ministerio%20del%20interior.jpeg" alt="Escudo" class="side-image">
+        <img src="https://pbs.twimg.com/media/GusyGVJWMAAC_Ud.jpg" alt="Bandeira" class="side-image">
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="scripts.js"></script>
+</body>
+</html>

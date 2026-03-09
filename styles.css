@@ -1,0 +1,140 @@
+html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; font-family: 'Roboto Condensed', sans-serif; background: #2A3180; overflow: hidden; }
+#map { position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: 0; }
+
+.map-overlay-header { position: absolute; top: 0; left: 0; right: 0; z-index: 1000; display: flex; justify-content: center; pointer-events: none; }
+.header-content { background: rgba(18, 18, 18, 0.9); padding: 10px 40px; border-radius: 0 0 15px 15px; border-bottom: 2px solid #2A3180; display: flex; align-items: center; gap: 15px; pointer-events: auto; }
+.map-logo { height: 40px; }
+#mainTitle { margin: 0; font-size: 21px; color: #D9D9D9; letter-spacing: 1px; }
+
+.controls { position: absolute; top: 20px; left: 20px; z-index: 1000; background: rgba(25, 25, 25, 0.95); padding: 20px; width: 250px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
+.map-button { width: 100%; background: #2A3180; color: #D9D9D9; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-bottom: 10px; text-transform: uppercase; }
+.map-button:hover { background: #9C9B9D; transform: scale(1.02); }
+.separator { height: 1px; background: rgba(255,255,255,0.1); margin: 15px 0; }
+
+label { font-size: 10px; color: #D9D9D9; font-weight: bold; display: flex; flex-direction: column; gap: 8px; margin-top: 20px; margin-bottom: 15px; text-transform: uppercase; }
+select { background: #333; color: #fff; border: 1px solid #2A3180; padding: 10px; border-radius: 6px; cursor: pointer; }
+
+.info-card { margin-top: 15px; padding: 15px; background: rgba(42, 49, 128, 0.2); border: 1px solid #2A3180; border-radius: 8px; }
+.info-card p { margin: 5px 0; font-size: 15px; color: #D9D9D9; }
+
+/* Contenedor principal de la leyenda */
+.legend-horizontal { 
+    background: rgba(0, 0, 0, 0.85); 
+    padding: 10px 15px; /* Reducido */
+    border-radius: 8px; 
+    border: 1px solid #2A3180; 
+    box-shadow: 0 8px 32px rgba(0,0,0,0.8); 
+    margin: 15px; /* Reducido */
+    max-width: 350px; /* Evita que crezca sin control */
+}
+
+/* El contenedor de los items */
+.legend-container { 
+    display: flex; 
+    gap: 8px; /* Espacio más fino entre colores */
+    align-items: center; 
+    justify-content: center;
+}
+
+/* Cada categoría de color */
+.legend-item { 
+    flex: 1; /* Distribuye el espacio equitativamente */
+    min-width: 50px; /* Bajamos de 100px a 50px */
+    text-align: center; 
+    cursor: pointer; 
+    transition: 0.3s ease; 
+}
+
+.legend-color { 
+    height: 10px; /* Más delgada y elegante */
+    border-radius: 2px; 
+    margin-bottom: 5px; 
+    border: 1px solid rgba(255,255,255,0.3); 
+}
+
+.legend-text { 
+    color: #D9D9D9; 
+    font-size: 9px; /* Fuente más pequeña para que no se amontone */
+    font-weight: bold; 
+    white-space: nowrap; /* Evita que el texto salte de línea */
+}
+
+/* Ajuste del efecto activo para que no sea tan agresivo */
+.active-legend { 
+    transform: translateY(-5px) scale(1.05); 
+    background: rgba(255, 255, 255, 0.1); 
+    border-radius: 4px; 
+    padding: 3px; 
+    box-shadow: 0 0 15px #2A3180; 
+}
+
+.tooltip-selected { background: #2A3180 !important; color: #000 !important; font-weight: 900; padding: 8px 15px; border-radius: 5px; border: 2px solid #D9D9D9 !important; font-size: 14px; }
+
+.side-images { position: absolute; top: 120px; right: 20px; z-index: 1000; display: flex; flex-direction: column;align-items: flex-end; gap: 15px; }
+.side-image { width: 12%; border-radius: 6px; border: 2px solid #2A3180; background: #D9D9D9; padding: 4px; transition: 0.3s; left: 20px; }
+.side-image:hover { transform: rotate(5deg) scale(1.1); }
+
+/* --- AJUSTES PARA CELULAR --- */
+@media (max-width: 768px) {
+    
+    /* 1. Ajuste del Header: Más pequeño y pegado arriba */
+    .map-overlay-header {
+        top: 0;
+    }
+    .header-content {
+        padding: 5px 15px !important;
+        gap: 10px !important;
+        border-radius: 0 !important; /* Que ocupe todo el ancho */
+        width: 100%;
+        justify-content: center;
+    }
+    .map-logo { height: 30px !important; }
+    #mainTitle { font-size: 14px !important; }
+
+    /* 2. El Panel de Controles: Lo movemos ABAJO */
+    /* Esto es vital para que dejes de ver todo superpuesto */
+    .controls {
+        top: auto !important; /* Quitamos el top: 20px */
+        bottom: 10px !important; 
+        left: 10px !important;
+        right: 10px !important;
+        width: auto !important; /* Que use el ancho del celu */
+        max-height: 40vh !important; /* Que no tape más de la mitad del mapa */
+        overflow-y: auto !important; /* Si hay muchas opciones, permite scroll interno */
+        padding: 15px !important;
+    }
+
+    /* 3. Las Imágenes Laterales: Las ocultamos */
+    /* En un celular tapan mucha área del mapa y no son funcionales */
+    .side-images {
+        display: none !important;
+    }
+
+    /* 4. La Leyenda: La hacemos más compacta */
+    .legend-horizontal {
+        margin: 10px !important;
+        padding: 10px !important;
+        position: absolute;
+        bottom: 50% !important; /* La subimos un poco para que no choque con controles */
+        width: 90%;
+        left: 5%;
+        box-sizing: border-box;
+    }
+    .legend-container {
+        gap: 5px !important;
+        overflow-x: auto; /* Si no caben los colores, que el usuario deslice */
+    }
+    .legend-item {
+        min-width: 60px !important;
+    }
+    .legend-text {
+        font-size: 10px !important;
+    }
+
+    /* 5. Ajuste de inputs para dedos (Touch friendly) */
+    select, .map-button {
+        padding: 12px !important; /* Más fácil de tocar */
+        font-size: 14px !important;
+    }
+
+}
