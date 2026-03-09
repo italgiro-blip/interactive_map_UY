@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
         satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}')
     };
 
-    const map = L.map('map', { zoomControl: false, layers: [baseLayers.dark] }).setView([-33.3823, -56.5276], 14);
+    const map = L.map('map', { zoomControl: false, layers: [baseLayers.dark] }).setView([-33.3823, -56.5276], 25);
 
     const labelSelect = document.getElementById('labelSelect');
     const classificationSelect = document.getElementById('classificationSelect');
@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Carga y Dibujo
     document.getElementById('btnCargarGeoJSON').onclick = () => {
-        fetch('maps.geojson')
+        fetch('maps2.geojson')
             .then(res => res.json())
             .then(data => {
                 currentBreaks = computeBreaks(data, classificationSelect.value);
@@ -180,5 +180,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.resetHighlight = () => geojsonLayer.eachLayer(l => geojsonLayer.resetStyle(l));
 
 });
+
 
 
