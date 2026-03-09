@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Carga y Dibujo
     document.getElementById('btnCargarGeoJSON').onclick = () => {
-        fetch('maps2.geojson')
+        fetch('maps_.geojson')
             .then(res => res.json())
             .then(data => {
                 currentBreaks = computeBreaks(data, classificationSelect.value);
@@ -180,6 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.resetHighlight = () => geojsonLayer.eachLayer(l => geojsonLayer.resetStyle(l));
 
 });
+
 
 
 
