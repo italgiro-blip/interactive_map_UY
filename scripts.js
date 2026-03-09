@@ -1,26 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Configuración de Mapas Base (Tiles)
+    // 1. Capas Base
     const baseLayers = {
         dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'),
         streets: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
         satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}')
     };
 
-    // Inicializar mapa centrado en Uruguay
+    // Inicializar mapa centrado en Uruguay (Lat, Lon)
     const map = L.map('map', { 
-        layers: [baseLayers.dark] 
+        layers: [baseLayers.dark],
+        zoomControl: true 
     }).setView([-32.8, -56.0], 7);
-    
-    // Referencias a elementos del DOM (HTML)
-    const labelSelect = document.getElementById('labelSelect');
-    const classificationSelect = document.getElementById('classificationSelect');
-    const paletteSelect = document.getElementById('paletteSelect');
-    const baseMapSelect = document.getElementById('baseMapSelect');
-    
+
     let geojsonLayer, legend;
+    let currentPalette = ['#eff3ff', '#bdd7e7', '#6baed6', '#3182bd', '#08519c']; // Blues por defecto
     let currentBreaks = [];
 
-    // 2. Paletas de Colores
     const colorSchemes = {
         blues: ['#eff3ff', '#bdd7e7', '#6baed6', '#3182bd', '#08519c'],
         reds: ['#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15'],
@@ -28,128 +23,116 @@ document.addEventListener('DOMContentLoaded', () => {
         purples: ['#f2f0f7', '#cbc9e2', '#9e9ac8', '#756bb1', '#54278f']
     };
 
-    let currentPalette = colorSchemes.blues;
+    // 2. Lógica de Colores y Rangos
+    function getColor(d, breaks) {
+        if (d === undefined || d === null) return '#333';
+        return d <= breaks[1] ? currentPalette[0] :
+               d <= breaks[2] ? currentPalette[1] :
+               d <= breaks[3] ? currentPalette[2] :
+               d <= breaks[4] ? currentPalette[3] :
+                                currentPalette[4];
+    }
 
-    // 3. Lógica de Clasificación de Datos (Quintiles e Intervalos)
     function computeBreaks(data, method) {
         const values = data.features
             .map(f => parseFloat(f.properties.Tasa_promedio) || 0)
             .sort((a, b) => a - b);
         
-        if (values.length === 0) return [0, 0, 0, 0, 0, 0];
-        const n = 5; // Número de clases fijo para las paletas de 5 colores
+        if (values.length === 0) return [0, 1, 2, 3, 4, 5];
+
+        const min = values[0];
+        const max = values[values.length - 1];
 
         if (method === 'equal') {
-            const min = values[0];
-            const max = values[values.length - 1];
-            const step = (max - min) / n;
-            return Array.from({ length: n + 1 }, (_, i) => min + i * step);
+            const step = (max - min) / 5;
+            return [min, min + step, min + step * 2, min + step * 3, min + step * 4, max];
+        } else {
+            // Quintiles (por defecto)
+            return [
+                values[0],
+                values[Math.floor(values.length * 0.2)],
+                values[Math.floor(values.length * 0.4)],
+                values[Math.floor(values.length * 0.6)],
+                values[Math.floor(values.length * 0.8)],
+                values[values.length - 1]
+            ];
         }
-        
-        // Por defecto: Quintiles (divide la muestra en 5 partes iguales)
-        return [
-            values[0],
-            values[Math.floor(values.length * 0.2)],
-            values[Math.floor(values.length * 0.4)],
-            values[Math.floor(values.length * 0.6)],
-            values[Math.floor(values.length * 0.8)],
-            values[values.length - 1]
-        ];
     }
 
-    function getColor(v, breaks) {
-        for (let i = 0; i < breaks.length - 1; i++) {
-            if (v >= breaks[i] && v <= breaks[i+1]) return currentPalette[i];
-        }
-        return currentPalette[currentPalette.length - 1];
-    }
-
-    // 4. Función Principal de Carga
-    const cargarGeoJSON = () => {
-        // El archivo debe estar en la misma carpeta en GitHub
+    // 3. Función de Carga
+    const cargarMapa = () => {
         fetch('tasas_H_dep.geojson')
             .then(res => {
-                if (!res.ok) throw new Error("Archivo GeoJSON no encontrado");
+                if (!res.ok) throw new Error("No se encuentra el archivo .geojson");
                 return res.json();
             })
             .then(data => {
-                // Calcular rangos según el método seleccionado
-                currentBreaks = computeBreaks(data, classificationSelect.value);
-                
-                // Limpiar capa anterior si existe
+                const method = document.getElementById('classificationSelect').value;
+                currentBreaks = computeBreaks(data, method);
+
                 if (geojsonLayer) map.removeLayer(geojsonLayer);
-                
-                // Limpiar el selector de departamentos
+
+                const labelSelect = document.getElementById('labelSelect');
                 labelSelect.innerHTML = '<option value="">Seleccione Departamento...</option>';
 
                 geojsonLayer = L.geoJSON(data, {
                     style: (f) => ({
-                        fillColor: getColor(parseFloat(f.properties.Tasa_promedio) || 0, currentBreaks),
+                        fillColor: getColor(f.properties.Tasa_promedio, currentBreaks),
                         weight: 1.5,
                         color: 'white',
                         fillOpacity: 0.8
                     }),
                     onEachFeature: (f, layer) => {
-                        const nombre = f.properties.NOMBRE || "Sin nombre";
+                        const nombre = f.properties.NOMBRE || "N/A";
                         const tasa = f.properties.Tasa_promedio || 0;
-                        
-                        // Evento al hacer clic en un departamento
-                        layer.on('click', () => seleccionarDepto(nombre, tasa, layer));
-                        
-                        // Llenar el dropdown
+
+                        layer.on('click', () => {
+                            seleccionarDepartamento(nombre, tasa, layer);
+                        });
+
                         labelSelect.add(new Option(nombre, nombre));
                     }
                 }).addTo(map);
 
-                addLegend();
+                actualizarLeyenda();
                 map.fitBounds(geojsonLayer.getBounds());
             })
-            .catch(err => {
-                console.error(err);
-                alert("Error al cargar el GeoJSON. Revisa la consola (F12).");
-            });
+            .catch(err => alert("Error al cargar: " + err.message));
     };
 
-    // 5. Interacción y UI
-    function seleccionarDepto(nombre, tasa, layer) {
-        // Actualizar panel de detalles
+    // 4. Interacción UI
+    function seleccionarDepartamento(nombre, tasa, layer) {
         document.getElementById('detailNome').innerHTML = `<b>Departamento:</b> ${nombre}`;
         document.getElementById('detailTaxa').innerHTML = `<b>Tasa Promedio:</b> ${tasa}`;
-        
-        // Sincronizar el select
-        labelSelect.value = nombre;
+        document.getElementById('labelSelect').value = nombre;
 
-        // Resetear estilos y resaltar el seleccionado
         geojsonLayer.eachLayer(l => geojsonLayer.resetStyle(l));
-        layer.setStyle({ 
-            color: '#ffff00', 
-            weight: 4, 
-            fillOpacity: 0.9 
+        
+        layer.setStyle({
+            color: '#ffff00',
+            weight: 4,
+            fillOpacity: 0.9
         });
-        
         layer.bringToFront();
-        
-        // Tooltip dinámico
-        layer.bindTooltip(`<b>${nombre}</b><br>Tasa: ${tasa}`, {
-            direction: 'top',
-            sticky: true
-        }).openTooltip();
     }
 
-    function addLegend() {
+    function actualizarLeyenda() {
         if (legend) map.removeControl(legend);
-        
         legend = L.control({ position: 'bottomright' });
-        
+
         legend.onAdd = () => {
             const div = L.DomUtil.create('div', 'legend-container');
-            let html = '<strong>Tasa Promedio</strong><br>';
-            
+            div.style.background = 'rgba(0,0,0,0.8)';
+            div.style.padding = '10px';
+            div.style.color = 'white';
+            div.style.borderRadius = '8px';
+
+            let html = '<b>Tasa Promedio</b><br>';
             for (let i = 0; i < currentBreaks.length - 1; i++) {
                 html += `
-                    <div class="legend-item" style="display: flex; align-items: center; margin-bottom: 4px;">
-                        <div class="legend-color" style="background:${currentPalette[i]}; width: 18px; height: 18px; margin-right: 8px; border: 1px solid #fff;"></div>
-                        <span>${currentBreaks[i].toFixed(1)} - ${currentBreaks[i+1].toFixed(1)}</span>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                        <div style="width: 18px; height: 18px; background:${currentPalette[i]}; border: 1px solid #fff"></div>
+                        ${currentBreaks[i].toFixed(1)} - ${currentBreaks[i+1].toFixed(1)}
                     </div>`;
             }
             div.innerHTML = html;
@@ -158,28 +141,30 @@ document.addEventListener('DOMContentLoaded', () => {
         legend.addTo(map);
     }
 
-    // 6. Listeners de Controles
-    document.getElementById('btnCargarGeoJSON').onclick = cargarGeoJSON;
+    // 5. Eventos de los Controles
+    document.getElementById('btnCargarGeoJSON').onclick = cargarMapa;
 
-    baseMapSelect.onchange = (e) => {
+    document.getElementById('baseMapSelect').onchange = (e) => {
         Object.values(baseLayers).forEach(l => map.removeLayer(l));
         baseLayers[e.target.value].addTo(map);
     };
 
-    paletteSelect.onchange = (e) => {
+    document.getElementById('paletteSelect').onchange = (e) => {
         currentPalette = colorSchemes[e.target.value];
-        if (geojsonLayer) cargarGeoJSON(); // Recargar para aplicar colores
+        if (geojsonLayer) cargarMapa();
     };
 
-    classificationSelect.onchange = () => {
-        if (geojsonLayer) cargarGeoJSON(); // Recargar para aplicar cálculos
+    document.getElementById('classificationSelect').onchange = () => {
+        if (geojsonLayer) cargarMapa();
     };
 
-    labelSelect.onchange = (e) => {
+    document.getElementById('labelSelect').onchange = (e) => {
+        const selected = e.target.value;
         geojsonLayer.eachLayer(layer => {
-            if (layer.feature.properties.NOMBRE === e.target.value) {
-                seleccionarDepto(
-                    layer.feature.properties.NOMBRE, 
-                    layer.feature.properties.Tasa_promedio, 
-                    layer
-                );
+            if (layer.feature.properties.NOMBRE === selected) {
+                seleccionarDepartamento(selected, layer.feature.properties.Tasa_promedio, layer);
+                map.fitBounds(layer.getBounds());
+            }
+        });
+    };
+});
