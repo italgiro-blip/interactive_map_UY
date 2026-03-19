@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
         satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}')
     };
 
-    const map = L.map('map', { zoomControl: false, layers: [baseLayers.dark] }).setView([0, 0], 2);
+    const map = L.map('map', { zoomControl: false, layers: [baseLayers.dark] }).setView([-32.5228, -55.7658], 7);
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 
     let geojsonLayer, currentData, currentBreaks = [];
@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     let currentPalette = colorSchemes.blues;
 
+    // Función auxiliar para buscar nombres de campos (agregamos 'tasa_promedio' y 'nombre')
     const getProp = (p, keys) => {
         const found = Object.keys(p).find(k => keys.includes(k.toLowerCase()));
         return found ? p[found] : null;
@@ -27,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. LÓGICA ESTADÍSTICA
     function computeBreaks(data, method) {
         const vals = data.features
-            .map(f => parseFloat(getProp(f.properties, ['taxa', 'rate', 'tasa', 'valor'])) || 0)
+            .map(f => parseFloat(getProp(f.properties, ['tasa_promedio', 'taxa', 'rate', 'tasa', 'valor'])) || 0)
             .sort((a, b) => a - b);
         
         const min = vals[0], max = vals[vals.length - 1];
@@ -37,7 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (method === 'quartiles') {
             return [vals[0], vals[Math.floor(vals.length * 0.2)], vals[Math.floor(vals.length * 0.4)], vals[Math.floor(vals.length * 0.6)], vals[Math.floor(vals.length * 0.8)], vals[vals.length - 1]];
         } else {
-            // Jenks Simplificado para diferenciar visualmente
             return [min, vals[Math.floor(vals.length * 0.1)], vals[Math.floor(vals.length * 0.3)], vals[Math.floor(vals.length * 0.6)], vals[Math.floor(vals.length * 0.85)], max];
         }
     }
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return currentPalette[4];
     }
 
-    // 3. ACTUALIZACIÓN DEL MAPA
+    // 3. ACTUALIZACIÓN DEL MAPA (Aquí incluimos nombre y valor en etiqueta)
     function renderMap(data) {
         if (!data) return;
         currentBreaks = computeBreaks(data, document.getElementById('classificationSelect').value);
@@ -55,12 +55,21 @@ document.addEventListener('DOMContentLoaded', () => {
         
         geojsonLayer = L.geoJSON(data, {
             style: (f) => ({
-                fillColor: getColor(parseFloat(getProp(f.properties, ['taxa', 'rate', 'tasa', 'valor'])) || 0, currentBreaks),
+                fillColor: getColor(parseFloat(getProp(f.properties, ['tasa_promedio', 'taxa', 'rate', 'tasa', 'valor'])) || 0, currentBreaks),
                 weight: 1.5, color: 'white', fillOpacity: 0.8
             }),
             onEachFeature: (f, layer) => {
-                const n = getProp(f.properties, ['nombre', 'name', 'departamento', 'freguesia']);
-                const t = getProp(f.properties, ['taxa', 'rate', 'tasa', 'valor']) || 0;
+                // Seleccionamos los campos nombre y valor
+                const n = getProp(f.properties, ['nombre', 'name', 'departamento']);
+                const t = getProp(f.properties, ['tasa_promedio', 'taxa', 'rate', 'tasa', 'valor']) || 0;
+
+                // AÑADIMOS LA ETIQUETA INTERACTIVA (Tooltip)
+                layer.bindTooltip(`<strong>${n}</strong><br>Valor: ${t}`, {
+                    sticky: true,
+                    direction: 'top'
+                });
+
+                // LÓGICA DE CLIC (Detalle lateral)
                 layer.on('click', () => {
                     document.getElementById('detailNome').innerHTML = `<b>Unidad:</b> ${n}`;
                     document.getElementById('detailTaxa').innerHTML = `<b>Valor:</b> ${t}%`;
@@ -102,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const name = getProp(f.properties, ['nombre', 'name', 'departamento']);
                     if(name) select.add(new Option(name, name));
                 });
-            }).catch(e => alert("Error al cargar 'tasas_H_dep.geojson'. Asegúrate de que el nombre sea exacto."));
+            }).catch(e => alert("Error al cargar 'tasas_H_dep.geojson'."));
     };
 
     document.getElementById('classificationSelect').onchange = () => renderMap(currentData);
