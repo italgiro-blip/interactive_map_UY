@@ -1,77 +1,71 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Geoestadístico | Análisis de Tasas</title>
-    
+    <title>SIG AECA-MI | Pro</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
-    <div class="map-overlay-header">
+    <header class="map-overlay-header">
         <div class="header-content">
-            <h1 id="mainTitle">Análisis Geográfico de Tasas</h1>
+            <img src="ruta/a/tu/logotipo.png" alt="Logotipo AECA" class="map-logo">
+            <h1 id="mainTitle">Área de Estadística y Criminología Aplicada (AECA)</h1>
         </div>
-    </div>
+    </header>
 
-    <div class="controls">
-        <label>Mapa Base
+    <aside class="controls">
+        <h3 style="color: #D9D9D9; font-size: 14px; letter-spacing: 1px; margin-bottom: 15px;">Parámetros Visuales</h3>
+        <button type="button" id="btnCargarGeoJSON" class="map-button">Cargar Datos Braga</button>
+        <div class="separator"></div>
+
+        <label>MAPA BASE
             <select id="baseMapSelect">
-                <option value="dark">Carto Dark (Oscuro)</option>
-                <option value="streets">OpenStreetMap (Color)</option>
-                <option value="satellite">Satélite</option>
+                <option value="dark">Modo Escuro (CartoDB)</option>
+                <option value="streets">OpenStreetMap</option>
+                <option value="satellite">Satélite (Esri)</option>
             </select>
         </label>
 
-        <div class="separator"></div>
-        
-        <button id="btnCargarGeoJSON" class="map-button">
-            Cargar Datos GeoJSON
-        </button>
-        
-        <div class="separator"></div>
-
-        <label>Método de Clasificación
+        <label>MÉTODO ESTATÍSTICO
             <select id="classificationSelect">
-                <option value="quintile">Quintiles (Equitativo)</option>
-                <option value="equal">Intervalos Iguales</option>
-                <option value="jenks">Natural Breaks (Jenks)</option>
+                <option value="jenks">Optimizar Grupos (Jenks)</option>
+                <option value="equal">Rangos Uniformes (Iguales)</option>
+                <option value="quartiles">Distribución por Frecuencia</option>
             </select>
         </label>
 
-        <label>Paleta de Colores
+        <label>ESQUEMA CROMÁTICO
             <select id="paletteSelect">
-                <option value="blues">Azules</option>
-                <option value="reds">Rojos</option>
-                <option value="greens">Verdes</option>
-                <option value="purples">Púrpuras</option>
-                <option value="yellows">Naranjas</option>
+                <option value="blues" selected>Escala de Azules</option>
+                <option value="reds">Escala de Rojos</option>
+                <option value="purples">Escala de Purpúreos</option>
+                <option value="greens">Escala de Verdes</option>
             </select>
         </label>
 
-        <div class="separator"></div>
-
-        <label>Buscador de Unidades
+        <label>ENTIDAD ADMINISTRATIVA
             <select id="labelSelect">
-                <option value="">Seleccione Unidad...</option>
+                <option value="">Esperando datos...</option>
             </select>
         </label>
 
-        <div id="infoCard" class="info-card" style="display:none;">
+        <div id="infoBox" class="info-card">
             <p id="detailNome"><b>Unidad:</b> --</p>
             <p id="detailTaxa"><b>Valor:</b> --</p>
         </div>
+    </aside>
+
+    <div class="side-images">
+        <img src="ruta/a/tu/imagen_lateral_1.jpg" alt="Imagen Lateral 1" class="side-image">
+        <img src="ruta/a/tu/imagen_lateral_2.jpg" alt="Imagen Lateral 2" class="side-image">
     </div>
 
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <script src="script.js"></script>
+    <script src="scripts.js"></script>
 </body>
 </html>
