@@ -1,9 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. INICIALIZACIÓN DEL MAPA
     const map = L.map('map', { zoomSnap: 0.5, attributionControl: false }).setView([-32.8, -56.0], 7);
     
+    // Capas base configuradas correctamente
     const baseLayers = {
         'dark': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'),
-        'streets': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
+        'streets': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
+        'satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}')
     };
     baseLayers.dark.addTo(map);
 
@@ -16,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return parseFloat(valor);
     }
 
-    // --- ESTADÍSTICOS AVANZADOS ---
+    // 2. ESTADÍSTICOS (CORREGIDOS)
     function calcularBreaks(valores, metodo) {
         const v = valores.filter(n => !isNaN(n)).sort((a, b) => a - b);
         if (v.length < 5) return [0, 5, 10, 15, 20];
@@ -26,39 +29,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (metodo === 'equal') {
             const step = (max - min) / 5;
             return [min, min + step, min + step * 2, min + step * 3, min + step * 4];
-        } 
-        else if (metodo === 'quartile') {
-            // Distribución por Cuartos (25% cada uno)
-            return [
-                v[0],
-                v[Math.floor(v.length * 0.25)],
-                v[Math.floor(v.length * 0.50)],
-                v[Math.floor(v.length * 0.75)],
-                v[Math.floor(v.length * 0.90)] // Último tramo superior
-            ];
-        }
-        else if (metodo === 'jenks') {
-            // Jenks simplificado: busca saltos grandes en la serie de datos
-            const saltos = [];
-            for (let i = 1; i < v.length; i++) {
-                saltos.push({ index: i, diff: v[i] - v[i-1] });
-            }
-            saltos.sort((a, b) => b.diff - a.diff);
-            const indices = saltos.slice(0, 4).map(s => s.index).sort((a, b) => a - b);
-            return [v[0], v[indices[0]], v[indices[1]], v[indices[2]], v[indices[3]]];
-        }
-        else {
-            // Quintiles por defecto
-            const n = v.length - 1;
-            return [v[0], v[Math.floor(n * 0.2)], v[Math.floor(n * 0.4)], v[Math.floor(n * 0.6)], v[Math.floor(n * 0.8)]];
+        } else if (metodo === 'quartile') {
+            return [v[0], v[Math.floor(v.length * 0.25)], v[Math.floor(v.length * 0.5)], v[Math.floor(v.length * 0.75)], v[Math.floor(v.length * 0.9)]];
+        } else if (metodo === 'jenks') {
+            const saltos = v.map((val, i) => ({ i, d: i > 0 ? val - v[i-1] : 0 })).sort((a, b) => b.d - a.d);
+            const idxs = saltos.slice(0, 4).map(s => s.i).sort((a, b) => a - b);
+            return [v[0], v[idxs[0]], v[idxs[1]], v[idxs[2]], v[idxs[3]]];
+        } else {
+            return [v[0], v[Math.floor(v.length * 0.2)], v[Math.floor(v.length * 0.4)], v[Math.floor(v.length * 0.6)], v[Math.floor(v.length * 0.8)]];
         }
     }
 
+    // 3. COLORES (TODAS LAS PALETAS INCLUIDAS)
     function getColor(val, palette) {
         const colors = {
             'blues': ['#eff3ff', '#bdd7e7', '#6baed6', '#3182bd', '#08519c'],
             'reds':  ['#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15'],
-            'greens': ['#edf8e9', '#bae4b3', '#74c476', '#31a354', '#006d2c']
+            'greens': ['#edf8e9', '#bae4b3', '#74c476', '#31a354', '#006d2c'],
+            'purples': ['#f2f0f7', '#cbc9e2', '#9e9ac8', '#756bb1', '#54278f'],
+            'yellows': ['#ffffd4', '#fed98e', '#fe9929', '#d95f02', '#993404']
         };
         const p = colors[palette] || colors.blues;
         if (val >= breaks[4]) return p[4];
@@ -69,8 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function actualizarLeyenda(palette) {
-        const oldLegend = document.querySelector('.legend-horizontal');
-        if (oldLegend) oldLegend.remove();
+        const old = document.querySelector('.legend-horizontal');
+        if (old) old.remove();
         const legend = L.control({ position: 'bottomright' });
         legend.onAdd = () => {
             const div = L.DomUtil.create('div', 'legend-horizontal');
@@ -86,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         legend.addTo(map);
     }
 
+    // 4. RENDERIZADO Y ETIQUETAS
     function renderizarMapa() {
         if (!datosOriginales) return;
         const palette = document.getElementById('paletteSelect').value;
@@ -96,26 +86,35 @@ document.addEventListener('DOMContentLoaded', () => {
         if (geojsonLayer) map.removeLayer(geojsonLayer);
 
         geojsonLayer = L.geoJSON(datosOriginales, {
-            style: (f) => ({ fillColor: getColor(getValor(f.properties), palette), weight: 1.5, color: 'white', fillOpacity: 0.8 }),
+            style: (f) => ({
+                fillColor: getColor(getValor(f.properties), palette),
+                weight: 1.5, color: 'white', fillOpacity: 0.7
+            }),
             onEachFeature: (f, layer) => {
-                const nombre = f.properties.NOMBRE || f.properties.nombre;
+                const nombre = f.properties.NOMBRE || f.properties.nombre || "S/N";
                 const valor = getValor(f.properties);
 
+                // Etiqueta flotante (Tooltip)
+                layer.bindTooltip(`<b>${nombre}</b><br>Valor: ${valor.toFixed(2)}`, { sticky: true });
+
                 layer.on('click', (e) => {
-                    // 1. Actualizar Textos
+                    // Actualizar UI
                     document.getElementById('detailNome').innerHTML = `<b>Unidad:</b> ${nombre}`;
                     document.getElementById('detailTaxa').innerHTML = `<b>Valor:</b> ${valor.toFixed(2)}`;
                     
-                    // 2. CORRECCIÓN: Actualizar el Selector visualmente
-                    const selector = document.getElementById('labelSelect');
-                    selector.value = nombre; 
+                    // Sincronizar selector
+                    const sel = document.getElementById('labelSelect');
+                    sel.value = nombre; 
 
-                    // 3. UI feedback
+                    // Resaltar leyenda
                     document.querySelectorAll('.legend-item').forEach(el => el.classList.remove('active-legend'));
-                    for (let i = 4; i >= 0; i--) { if (valor >= breaks[i]) { 
-                        const item = document.getElementById(`leg-${i}`);
-                        if(item) item.classList.add('active-legend'); break; 
-                    } }
+                    for (let i = 4; i >= 0; i--) { 
+                        if (valor >= breaks[i]) { 
+                            const item = document.getElementById(`leg-${i}`);
+                            if(item) item.classList.add('active-legend'); 
+                            break; 
+                        } 
+                    }
                     map.fitBounds(e.target.getBounds(), { padding: [30, 30] });
                 });
             }
@@ -123,7 +122,8 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizarLeyenda(palette);
     }
 
-    async function cargarGeoJSON() {
+    // 5. EVENTOS
+    document.getElementById('btnCargarGeoJSON').addEventListener('click', async () => {
         try {
             const res = await fetch('tasas_H_dep.geojson');
             datosOriginales = await res.json();
@@ -136,18 +136,25 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             renderizarMapa();
             map.fitBounds(geojsonLayer.getBounds());
-        } catch (err) { alert("Error al cargar datos"); }
-    }
+        } catch (err) { alert("Error al cargar GeoJSON"); }
+    });
 
-    // LISTENERS
-    document.getElementById('btnCargarGeoJSON').addEventListener('click', cargarGeoJSON);
+    // Cambio de Mapa Base (CORREGIDO)
+    document.getElementById('baseMapSelect').addEventListener('change', (e) => {
+        const selected = e.target.value;
+        // Remover todas las capas base antes de añadir la nueva
+        Object.values(baseLayers).forEach(layer => map.removeLayer(layer));
+        baseLayers[selected].addTo(map);
+    });
+
     document.getElementById('classificationSelect').addEventListener('change', renderizarMapa);
     document.getElementById('paletteSelect').addEventListener('change', renderizarMapa);
     
     document.getElementById('labelSelect').addEventListener('change', (e) => {
         const val = e.target.value;
         geojsonLayer.eachLayer(l => {
-            if ((l.feature.properties.NOMBRE || l.feature.properties.nombre) === val) l.fire('click');
+            const n = l.feature.properties.NOMBRE || l.feature.properties.nombre;
+            if (n === val) l.fire('click');
         });
     });
 });
