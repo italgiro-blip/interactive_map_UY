@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Geoestadístico</title>
+    <title>Dashboard Geoestadístico | Análisis de Tasas</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -20,17 +22,21 @@
     <div class="controls">
         <label>Mapa Base
             <select id="baseMapSelect">
-                <option value="dark">Carto Dark</option>
-                <option value="streets">OpenStreetMap</option>
+                <option value="dark">Carto Dark (Oscuro)</option>
+                <option value="streets">OpenStreetMap (Color)</option>
                 <option value="satellite">Satélite</option>
             </select>
         </label>
 
         <div class="separator"></div>
-        <button id="btnCargarGeoJSON" class="map-button">Cargar Datos</button>
+        
+        <button id="btnCargarGeoJSON" class="map-button">
+            Cargar Datos GeoJSON
+        </button>
+        
         <div class="separator"></div>
 
-        <label>Clasificación
+        <label>Método de Clasificación
             <select id="classificationSelect">
                 <option value="quintile">Quintiles (Equitativo)</option>
                 <option value="equal">Intervalos Iguales</option>
@@ -38,7 +44,7 @@
             </select>
         </label>
 
-        <label>Paleta
+        <label>Paleta de Colores
             <select id="paletteSelect">
                 <option value="blues">Azules</option>
                 <option value="reds">Rojos</option>
@@ -50,7 +56,7 @@
 
         <div class="separator"></div>
 
-        <label>Buscador
+        <label>Buscador de Unidades
             <select id="labelSelect">
                 <option value="">Seleccione Unidad...</option>
             </select>
@@ -65,6 +71,7 @@
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
     <script src="script.js"></script>
 </body>
 </html>
