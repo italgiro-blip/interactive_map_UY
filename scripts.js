@@ -1,11 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. CONFIGURACIÓN INICIAL DEL MAPA
+    // --- 1. CONFIGURACIÓN DEL MAPA ---
     const map = L.map('map', { 
         zoomSnap: 0.5, 
         attributionControl: false 
     }).setView([-32.8, -56.0], 7);
     
-    // Capas base: Definición clara para intercambio
     const baseLayers = {
         'dark': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'),
         'streets': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
@@ -14,30 +13,28 @@ document.addEventListener('DOMContentLoaded', () => {
     baseLayers.dark.addTo(map);
 
     let geojsonLayer = null;
-    let datosOriginales = null; 
-    let breaks = []; 
+    let datosOriginales = null;
+    let breaks = [];
 
-    // Extraer valor numérico de las propiedades
+    // --- 2. FUNCIONES DE APOYO ---
     function getValor(props) {
-        const v = props.Tasa_promedio || props.tasa_promedio || props.Tasa || props.value || 0;
-        return parseFloat(v);
+        // Busca cualquier propiedad que suene a tasa o valor numérico
+        return parseFloat(props.Tasa_promedio || props.tasa_promedio || props.Tasa || props.value || props.valor || 0);
     }
 
-    // 2. LÓGICA ESTADÍSTICA (NUEVOS MÉTODOS)
     function calcularBreaks(valores, metodo) {
         const v = valores.filter(n => !isNaN(n)).sort((a, b) => a - b);
         if (v.length < 5) return [0, 5, 10, 15, 20];
         
-        const min = v[0], max = v[v.length - 1];
+        const min = v[0];
+        const max = v[v.length - 1];
 
         switch(metodo) {
             case 'equal':
                 const step = (max - min) / 5;
                 return [min, min + step, min + step * 2, min + step * 3, min + step * 4];
-            case 'quartile':
-                return [v[0], v[Math.floor(v.length * 0.25)], v[Math.floor(v.length * 0.5)], v[Math.floor(v.length * 0.75)], v[Math.floor(v.length * 0.95)]];
             case 'jenks':
-                // Jenks simplificado por desviaciones
+                // Jenks simplificado por detección de saltos bruscos
                 const saltos = v.map((val, i) => ({ i, d: i > 0 ? val - v[i-1] : 0 })).sort((a, b) => b.d - a.d);
                 const idxs = saltos.slice(0, 4).map(s => s.i).sort((a, b) => a - b);
                 return [v[0], v[idxs[0]], v[idxs[1]], v[idxs[2]], v[idxs[3]]];
@@ -47,7 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 3. PALETAS DE COLORES (CORREGIDAS)
     function getColor(val, palette) {
         const colors = {
             'blues': ['#eff3ff', '#bdd7e7', '#6baed6', '#3182bd', '#08519c'],
@@ -57,14 +53,13 @@ document.addEventListener('DOMContentLoaded', () => {
             'yellows': ['#ffffd4', '#fed98e', '#fe9929', '#d95f02', '#993404']
         };
         const p = colors[palette] || colors.blues;
-        if (val >= breaks[4]) return p[4];
-        if (val >= breaks[3]) return p[3];
-        if (val >= breaks[2]) return p[2];
-        if (val >= breaks[1]) return p[1];
+        for (let i = 4; i >= 0; i--) {
+            if (val >= breaks[i]) return p[i];
+        }
         return p[0];
     }
 
-    // 4. LEYENDA DINÁMICA
+    // --- 3. ACTUALIZACIÓN DE UI ---
     function actualizarLeyenda(palette) {
         const old = document.querySelector('.legend-horizontal');
         if (old) old.remove();
@@ -74,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const div = L.DomUtil.create('div', 'legend-horizontal');
             let html = '<div class="legend-container">';
             breaks.forEach((v, i) => {
-                const c = getColor(v + 0.00001, palette);
+                const c = getColor(v, palette);
                 const label = breaks[i+1] ? `${v.toFixed(1)} - ${breaks[i+1].toFixed(1)}` : `${v.toFixed(1)}+`;
                 html += `<div class="legend-item" id="leg-${i}">
                             <div class="legend-color" style="background:${c}"></div>
@@ -87,7 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
         legend.addTo(map);
     }
 
-    // 5. RENDERIZACIÓN Y EVENTOS DE CAPA
     function renderizarMapa() {
         if (!datosOriginales) return;
         
@@ -105,35 +99,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 weight: 1.2, color: 'white', fillOpacity: 0.75
             }),
             onEachFeature: (f, layer) => {
-                const nombre = f.properties.NOMBRE || f.properties.nombre || "S/N";
+                const nombre = f.properties.NOMBRE || f.properties.nombre || "Sin Nombre";
                 const valor = getValor(f.properties);
 
-                // Tooltip interactivo
-                layer.bindTooltip(`<b>${nombre}</b><br>Tasa: ${valor.toFixed(2)}`, { sticky: true });
+                layer.bindTooltip(`<b>${nombre}</b><br>Tasa: ${valor.toFixed(2)}`, { 
+                    sticky: true, 
+                    className: 'custom-tooltip' 
+                });
 
                 layer.on({
                     click: (e) => {
-                        // Actualizar panel lateral
+                        const card = document.getElementById('infoCard');
+                        card.style.display = 'block';
                         document.getElementById('detailNome').innerHTML = `<b>Unidad:</b> ${nombre}`;
                         document.getElementById('detailTaxa').innerHTML = `<b>Valor:</b> ${valor.toFixed(2)}`;
                         
-                        // Sincronizar SELECTOR (Dropdown)
-                        const sel = document.getElementById('labelSelect');
-                        sel.value = nombre; 
+                        document.getElementById('labelSelect').value = nombre;
 
-                        // Resaltar Rango en Leyenda
+                        // Resaltar leyenda
                         document.querySelectorAll('.legend-item').forEach(el => el.classList.remove('active-legend'));
-                        for (let i = 4; i >= 0; i--) { 
-                            if (valor >= breaks[i]) { 
-                                const item = document.getElementById(`leg-${i}`);
-                                if(item) item.classList.add('active-legend'); 
-                                break; 
-                            } 
+                        for (let i = 4; i >= 0; i--) {
+                            if (valor >= breaks[i]) {
+                                document.getElementById(`leg-${i}`)?.classList.add('active-legend');
+                                break;
+                            }
                         }
                         map.fitBounds(e.target.getBounds(), { padding: [40, 40] });
                     },
-                    mouseover: (e) => { e.target.setStyle({ weight: 3, color: '#666', fillOpacity: 0.9 }); },
-                    mouseout: (e) => { geojsonLayer.resetStyle(e.target); }
+                    mouseover: (e) => { 
+                        e.target.setStyle({ weight: 3, color: '#fff', fillOpacity: 0.9 }); 
+                    },
+                    mouseout: (e) => { 
+                        geojsonLayer.resetStyle(e.target); 
+                    }
                 });
             }
         }).addTo(map);
@@ -141,18 +139,22 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizarLeyenda(palette);
     }
 
-    // 6. CARGA DE DATOS Y LISTENERS GLOBALES
+    // --- 4. LISTENERS DE EVENTOS ---
     document.getElementById('btnCargarGeoJSON').addEventListener('click', async () => {
         try {
             const res = await fetch('tasas_H_dep.geojson');
-            if (!res.ok) throw new Error("Archivo no encontrado");
+            if (!res.ok) throw new Error("No se pudo leer 'tasas_H_dep.geojson'. Verifica que el archivo exista y estés usando un servidor local.");
+            
             datosOriginales = await res.json();
             
             const sel = document.getElementById('labelSelect');
             sel.innerHTML = '<option value="">Seleccione Unidad...</option>';
             
-            // Poblar dropdown con nombres ordenados
-            const nombres = datosOriginales.features.map(f => f.properties.NOMBRE || f.properties.nombre).sort();
+            const nombres = datosOriginales.features
+                .map(f => f.properties.NOMBRE || f.properties.nombre)
+                .filter(n => n)
+                .sort();
+
             nombres.forEach(n => {
                 const o = document.createElement('option');
                 o.value = n; o.innerText = n; sel.appendChild(o);
@@ -160,20 +162,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             renderizarMapa();
             map.fitBounds(geojsonLayer.getBounds());
-        } catch (err) { alert("Error: " + err.message); }
+        } catch (err) {
+            alert("Error: " + err.message);
+        }
     });
 
-    // Cambio de mapas base (CORREGIDO)
     document.getElementById('baseMapSelect').addEventListener('change', (e) => {
         Object.values(baseLayers).forEach(l => map.removeLayer(l));
         baseLayers[e.target.value].addTo(map);
     });
 
-    // Listeners de controles
     document.getElementById('classificationSelect').addEventListener('change', renderizarMapa);
     document.getElementById('paletteSelect').addEventListener('change', renderizarMapa);
     
-    // Listener del buscador/selector (Dropdown -> Mapa)
     document.getElementById('labelSelect').addEventListener('change', (e) => {
         const buscado = e.target.value;
         if (!buscado) return;
