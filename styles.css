@@ -1,8 +1,10 @@
-/* --- BASE --- */
+/* ==========================================================================
+   1. BASE Y LAYOUT
+   ========================================================================== */
 html, body { 
     margin: 0; padding: 0; width: 100vw; height: 100vh; 
     font-family: 'Roboto Condensed', sans-serif; 
-    background: #121212; overflow: hidden; 
+    background: #121212; overflow: hidden; color: #D9D9D9;
 }
 
 #map { 
@@ -10,21 +12,30 @@ html, body {
     z-index: 1; background: #0f121a;
 }
 
-/* --- HEADER --- */
+/* Evitar que los controles de Leaflet (zoom, etc.) queden sobre los paneles */
+.leaflet-top, .leaflet-bottom { z-index: 999 !important; }
+
+/* ==========================================================================
+   2. HEADER (TÍTULO)
+   ========================================================================== */
 .map-overlay-header { 
     position: absolute; top: 0; left: 0; right: 0; z-index: 1000; 
     display: flex; justify-content: center; pointer-events: none; 
 }
+
 .header-content { 
     background: rgba(18, 18, 18, 0.95); padding: 10px 40px; 
     border-radius: 0 0 15px 15px; border-bottom: 3px solid #2A3180; 
     display: flex; align-items: center; gap: 15px; pointer-events: auto; 
     box-shadow: 0 4px 20px rgba(0,0,0,0.8);
 }
+
 .map-logo { height: 40px; }
 #mainTitle { margin: 0; font-size: 19px; color: #D9D9D9; text-transform: uppercase; letter-spacing: 1.5px; }
 
-/* --- CONTROLES --- */
+/* ==========================================================================
+   3. PANEL DE CONTROLES (IZQUIERDA)
+   ========================================================================== */
 .controls { 
     position: absolute; top: 85px; left: 20px; z-index: 1000; 
     background: rgba(25, 25, 25, 0.95); padding: 20px; width: 260px; 
@@ -32,55 +43,40 @@ html, body {
     border: 1px solid rgba(255,255,255,0.1); max-height: 80vh; overflow-y: auto;
 }
 
+/* Scrollbar personalizado para el panel */
+.controls::-webkit-scrollbar { width: 6px; }
+.controls::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+.controls::-webkit-scrollbar-thumb { background: #2A3180; border-radius: 3px; }
+
+/* Separadores y Etiquetas */
+.separator { height: 1px; background: rgba(255,255,255,0.1); margin: 15px 0; }
+label { font-size: 10px; color: #888; font-weight: bold; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; text-transform: uppercase; }
+
+/* Selectores (Dropdowns) */
+select { 
+    background: #1a1a1a; color: #fff; border: 1px solid #2A3180; 
+    padding: 8px; border-radius: 6px; width: 100%; cursor: pointer;
+    transition: border-color 0.3s;
+}
+select:focus { border-color: #3e48b8; outline: none; }
+
+/* ==========================================================================
+   4. BOTONES Y ESTADOS
+   ========================================================================== */
 .map-button { 
     width: 100%; background: #2A3180; color: #fff; border: none; 
     padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; 
-    transition: 0.3s; text-transform: uppercase; 
+    transition: all 0.3s ease; text-transform: uppercase; 
+    display: flex; align-items: center; justify-content: center;
 }
-.map-button:hover { background: #3e48b8; transform: translateY(-2px); }
+.map-button:hover { background: #3e48b8; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(42, 49, 128, 0.4); }
 
-/* BOTÓN GRIS (CARGANDO) */
+/* Botón Deshabilitado (Cargando) */
 .map-button:disabled { 
-    background: #444 !important; opacity: 0.7; cursor: not-allowed; transform: none; 
+    background: #444 !important; opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none;
 }
 
-.separator { height: 1px; background: rgba(255,255,255,0.1); margin: 15px 0; }
-
-label { font-size: 10px; color: #888; font-weight: bold; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; text-transform: uppercase; }
-select { background: #1a1a1a; color: #fff; border: 1px solid #2A3180; padding: 8px; border-radius: 6px; }
-
-.info-card { margin-top: 10px; padding: 12px; background: rgba(42, 49, 128, 0.1); border: 1px solid #2A3180; border-radius: 8px; }
-.info-card p { margin: 5px 0; font-size: 14px; color: #D9D9D9; }
-
-/* --- LEYENDA INTERACTIVA (5 NIVELES) --- */
-.legend-horizontal { 
-    background: rgba(18, 18, 18, 0.9); padding: 10px 15px; 
-    border-radius: 8px; border: 1px solid #2A3180; 
-    margin-bottom: 30px !important; margin-right: 20px !important;
-}
-.legend-container { display: flex; gap: 5px; align-items: flex-end; }
-.legend-item { 
-    flex: 1; min-width: 55px; text-align: center; 
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-}
-.legend-color { height: 10px; border-radius: 2px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.2); }
-.legend-text { color: #aaa; font-size: 9px; font-weight: bold; }
-
-/* Efecto cuando seleccionas un departamento */
-.active-legend { 
-    transform: translateY(-8px) scale(1.1); 
-    background: rgba(255, 255, 255, 0.1); 
-    border-radius: 4px; padding: 2px;
-}
-.active-legend .legend-text { color: #fff; }
-
-/* --- TOOLTIP --- */
-.custom-tooltip {
-    background: #1a1a1a !important; border: 1px solid #2A3180 !important;
-    color: #fff !important; font-weight: bold; padding: 5px 10px; border-radius: 4px;
-}
-
-/* --- SPINNER --- */
+/* Spinner de carga */
 .spinner {
     display: inline-block; width: 12px; height: 12px; 
     border: 2px solid rgba(255,255,255,0.3); border-radius: 50%;
@@ -88,8 +84,109 @@ select { background: #1a1a1a; color: #fff; border: 1px solid #2A3180; padding: 8
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* --- MOBILE --- */
+/* ==========================================================================
+   5. TARJETA DE DETALLES (INFO-CARD) CON ANIMACIÓN
+   ========================================================================== */
+.info-card { 
+    margin-top: 10px; padding: 12px; 
+    background: rgba(42, 49, 128, 0.1); 
+    border: 1px solid #2A3180; border-radius: 8px;
+    
+    /* Animación de entrada suave */
+    animation: fadeInSlide 0.4s ease-out;
+}
+.info-card p { margin: 5px 0; font-size: 14px; color: #D9D9D9; }
+
+@keyframes fadeInSlide {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   6. LEYENDA INTERACTIVA (5 NIVELES)
+   ========================================================================== */
+.legend-horizontal { 
+    background: rgba(18, 18, 18, 0.9); padding: 10px 15px; 
+    border-radius: 8px; border: 1px solid #2A3180; 
+    margin-bottom: 30px !important; margin-right: 20px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+
+.legend-container { display: flex; gap: 5px; align-items: flex-end; }
+
+.legend-item { 
+    flex: 1; min-width: 55px; text-align: center; 
+    display: flex; flex-direction: column; align-items: center;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+}
+
+.legend-color { 
+    height: 10px; width: 100%; border-radius: 2px; 
+    margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.2); 
+}
+
+.legend-text { 
+    color: #aaa; font-size: 9px; font-weight: bold; 
+    white-space: nowrap; /* Evita saltos de línea en números largos */
+}
+
+/* Efecto cuando seleccionas un departamento - Resaltado Bidireccional */
+.active-legend { 
+    transform: translateY(-8px) scale(1.1); 
+    background: rgba(42, 49, 128, 0.3); /* Fondo azul sutil */
+    border: 1px solid #2A3180;
+    box-shadow: 0 0 15px rgba(42, 49, 128, 0.6);
+    border-radius: 4px; padding: 4px;
+}
+.active-legend .legend-text { color: #fff; }
+
+/* ==========================================================================
+   7. TOOLTIP (ETIQUETA INTERACTIVA) - CORREGIDO
+   ========================================================================== */
+/* Sobrescribir estilos base de Leaflet */
+.leaflet-tooltip-top:before, 
+.leaflet-tooltip-bottom:before, 
+.leaflet-tooltip-left:before, 
+.leaflet-tooltip-right:before {
+    border-top-color: #2A3180 !important; /* Color de la flechita */
+}
+
+.custom-tooltip {
+    background: rgba(26, 26, 26, 0.95) !important; 
+    border: 1px solid #2A3180 !important;
+    color: #fff !important; 
+    font-weight: bold !important; 
+    padding: 8px 12px !important; 
+    border-radius: 4px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
+    font-family: 'Roboto Condensed', sans-serif !important;
+    font-size: 13px !important;
+    pointer-events: none; /* Asegura que el tooltip no interfiera con los clics */
+}
+
+/* ==========================================================================
+   8. AJUSTE DE VISUALIZACIÓN DEL MAPA
+   ========================================================================== */
+/* Un ligero ajuste de contraste para que los colores resalten en modo oscuro */
+.leaflet-tile-container {
+    filter: brightness(0.9) contrast(1.1);
+}
+
+/* ==========================================================================
+   9. MOBILE RESPONSIVE
+   ========================================================================== */
 @media (max-width: 768px) {
-    .controls { top: auto; bottom: 0; left: 0; right: 0; width: 100%; max-height: 35vh; border-radius: 15px 15px 0 0; }
-    .legend-horizontal { bottom: 36vh !important; transform: scale(0.8); width: 90%; }
+    .controls { 
+        top: auto; bottom: 0; left: 0; right: 0; 
+        width: 100%; max-height: 35vh; 
+        border-radius: 15px 15px 0 0; 
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.7);
+    }
+    
+    .legend-horizontal { 
+        bottom: 36vh !important; 
+        transform: scale(0.8); 
+        width: 90%; 
+        margin-right: 5% !important;
+    }
 }
