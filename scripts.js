@@ -1,8 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. INICIALIZACIÓN DEL MAPA
-    const map = L.map('map', { zoomSnap: 0.5, attributionControl: false }).setView([-32.8, -56.0], 7);
+    // 1. CONFIGURACIÓN INICIAL DEL MAPA
+    const map = L.map('map', { 
+        zoomSnap: 0.5, 
+        attributionControl: false 
+    }).setView([-32.8, -56.0], 7);
     
-    // Capas base configuradas correctamente
+    // Capas base: Definición clara para intercambio
     const baseLayers = {
         'dark': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'),
         'streets': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
@@ -14,33 +17,37 @@ document.addEventListener('DOMContentLoaded', () => {
     let datosOriginales = null; 
     let breaks = []; 
 
+    // Extraer valor numérico de las propiedades
     function getValor(props) {
-        const valor = props.Tasa_promedio || props.tasa_promedio || props.Tasa || props.value || 0;
-        return parseFloat(valor);
+        const v = props.Tasa_promedio || props.tasa_promedio || props.Tasa || props.value || 0;
+        return parseFloat(v);
     }
 
-    // 2. ESTADÍSTICOS (CORREGIDOS)
+    // 2. LÓGICA ESTADÍSTICA (NUEVOS MÉTODOS)
     function calcularBreaks(valores, metodo) {
         const v = valores.filter(n => !isNaN(n)).sort((a, b) => a - b);
         if (v.length < 5) return [0, 5, 10, 15, 20];
         
         const min = v[0], max = v[v.length - 1];
 
-        if (metodo === 'equal') {
-            const step = (max - min) / 5;
-            return [min, min + step, min + step * 2, min + step * 3, min + step * 4];
-        } else if (metodo === 'quartile') {
-            return [v[0], v[Math.floor(v.length * 0.25)], v[Math.floor(v.length * 0.5)], v[Math.floor(v.length * 0.75)], v[Math.floor(v.length * 0.9)]];
-        } else if (metodo === 'jenks') {
-            const saltos = v.map((val, i) => ({ i, d: i > 0 ? val - v[i-1] : 0 })).sort((a, b) => b.d - a.d);
-            const idxs = saltos.slice(0, 4).map(s => s.i).sort((a, b) => a - b);
-            return [v[0], v[idxs[0]], v[idxs[1]], v[idxs[2]], v[idxs[3]]];
-        } else {
-            return [v[0], v[Math.floor(v.length * 0.2)], v[Math.floor(v.length * 0.4)], v[Math.floor(v.length * 0.6)], v[Math.floor(v.length * 0.8)]];
+        switch(metodo) {
+            case 'equal':
+                const step = (max - min) / 5;
+                return [min, min + step, min + step * 2, min + step * 3, min + step * 4];
+            case 'quartile':
+                return [v[0], v[Math.floor(v.length * 0.25)], v[Math.floor(v.length * 0.5)], v[Math.floor(v.length * 0.75)], v[Math.floor(v.length * 0.95)]];
+            case 'jenks':
+                // Jenks simplificado por desviaciones
+                const saltos = v.map((val, i) => ({ i, d: i > 0 ? val - v[i-1] : 0 })).sort((a, b) => b.d - a.d);
+                const idxs = saltos.slice(0, 4).map(s => s.i).sort((a, b) => a - b);
+                return [v[0], v[idxs[0]], v[idxs[1]], v[idxs[2]], v[idxs[3]]];
+            default: // Quintiles
+                const n = v.length - 1;
+                return [v[0], v[Math.floor(n * 0.2)], v[Math.floor(n * 0.4)], v[Math.floor(n * 0.6)], v[Math.floor(n * 0.8)]];
         }
     }
 
-    // 3. COLORES (TODAS LAS PALETAS INCLUIDAS)
+    // 3. PALETAS DE COLORES (CORREGIDAS)
     function getColor(val, palette) {
         const colors = {
             'blues': ['#eff3ff', '#bdd7e7', '#6baed6', '#3182bd', '#08519c'],
@@ -57,30 +64,37 @@ document.addEventListener('DOMContentLoaded', () => {
         return p[0];
     }
 
+    // 4. LEYENDA DINÁMICA
     function actualizarLeyenda(palette) {
         const old = document.querySelector('.legend-horizontal');
         if (old) old.remove();
+        
         const legend = L.control({ position: 'bottomright' });
         legend.onAdd = () => {
             const div = L.DomUtil.create('div', 'legend-horizontal');
-            let h = '<div class="legend-container">';
+            let html = '<div class="legend-container">';
             breaks.forEach((v, i) => {
-                const c = getColor(v, palette);
-                const txt = breaks[i+1] ? `${v.toFixed(1)}-${breaks[i+1].toFixed(1)}` : `${v.toFixed(1)}+`;
-                h += `<div class="legend-item" id="leg-${i}"><div class="legend-color" style="background:${c}"></div><div class="legend-text">${txt}</div></div>`;
+                const c = getColor(v + 0.00001, palette);
+                const label = breaks[i+1] ? `${v.toFixed(1)} - ${breaks[i+1].toFixed(1)}` : `${v.toFixed(1)}+`;
+                html += `<div class="legend-item" id="leg-${i}">
+                            <div class="legend-color" style="background:${c}"></div>
+                            <div class="legend-text">${label}</div>
+                         </div>`;
             });
-            div.innerHTML = h + '</div>';
+            div.innerHTML = html + '</div>';
             return div;
         };
         legend.addTo(map);
     }
 
-    // 4. RENDERIZADO Y ETIQUETAS
+    // 5. RENDERIZACIÓN Y EVENTOS DE CAPA
     function renderizarMapa() {
         if (!datosOriginales) return;
+        
         const palette = document.getElementById('paletteSelect').value;
         const metodo = document.getElementById('classificationSelect').value;
         const valores = datosOriginales.features.map(f => getValor(f.properties));
+        
         breaks = calcularBreaks(valores, metodo);
 
         if (geojsonLayer) map.removeLayer(geojsonLayer);
@@ -88,73 +102,84 @@ document.addEventListener('DOMContentLoaded', () => {
         geojsonLayer = L.geoJSON(datosOriginales, {
             style: (f) => ({
                 fillColor: getColor(getValor(f.properties), palette),
-                weight: 1.5, color: 'white', fillOpacity: 0.7
+                weight: 1.2, color: 'white', fillOpacity: 0.75
             }),
             onEachFeature: (f, layer) => {
                 const nombre = f.properties.NOMBRE || f.properties.nombre || "S/N";
                 const valor = getValor(f.properties);
 
-                // Etiqueta flotante (Tooltip)
-                layer.bindTooltip(`<b>${nombre}</b><br>Valor: ${valor.toFixed(2)}`, { sticky: true });
+                // Tooltip interactivo
+                layer.bindTooltip(`<b>${nombre}</b><br>Tasa: ${valor.toFixed(2)}`, { sticky: true });
 
-                layer.on('click', (e) => {
-                    // Actualizar UI
-                    document.getElementById('detailNome').innerHTML = `<b>Unidad:</b> ${nombre}`;
-                    document.getElementById('detailTaxa').innerHTML = `<b>Valor:</b> ${valor.toFixed(2)}`;
-                    
-                    // Sincronizar selector
-                    const sel = document.getElementById('labelSelect');
-                    sel.value = nombre; 
+                layer.on({
+                    click: (e) => {
+                        // Actualizar panel lateral
+                        document.getElementById('detailNome').innerHTML = `<b>Unidad:</b> ${nombre}`;
+                        document.getElementById('detailTaxa').innerHTML = `<b>Valor:</b> ${valor.toFixed(2)}`;
+                        
+                        // Sincronizar SELECTOR (Dropdown)
+                        const sel = document.getElementById('labelSelect');
+                        sel.value = nombre; 
 
-                    // Resaltar leyenda
-                    document.querySelectorAll('.legend-item').forEach(el => el.classList.remove('active-legend'));
-                    for (let i = 4; i >= 0; i--) { 
-                        if (valor >= breaks[i]) { 
-                            const item = document.getElementById(`leg-${i}`);
-                            if(item) item.classList.add('active-legend'); 
-                            break; 
-                        } 
-                    }
-                    map.fitBounds(e.target.getBounds(), { padding: [30, 30] });
+                        // Resaltar Rango en Leyenda
+                        document.querySelectorAll('.legend-item').forEach(el => el.classList.remove('active-legend'));
+                        for (let i = 4; i >= 0; i--) { 
+                            if (valor >= breaks[i]) { 
+                                const item = document.getElementById(`leg-${i}`);
+                                if(item) item.classList.add('active-legend'); 
+                                break; 
+                            } 
+                        }
+                        map.fitBounds(e.target.getBounds(), { padding: [40, 40] });
+                    },
+                    mouseover: (e) => { e.target.setStyle({ weight: 3, color: '#666', fillOpacity: 0.9 }); },
+                    mouseout: (e) => { geojsonLayer.resetStyle(e.target); }
                 });
             }
         }).addTo(map);
+        
         actualizarLeyenda(palette);
     }
 
-    // 5. EVENTOS
+    // 6. CARGA DE DATOS Y LISTENERS GLOBALES
     document.getElementById('btnCargarGeoJSON').addEventListener('click', async () => {
         try {
             const res = await fetch('tasas_H_dep.geojson');
+            if (!res.ok) throw new Error("Archivo no encontrado");
             datosOriginales = await res.json();
+            
             const sel = document.getElementById('labelSelect');
             sel.innerHTML = '<option value="">Seleccione Unidad...</option>';
-            datosOriginales.features.forEach(f => {
-                const n = f.properties.NOMBRE || f.properties.nombre;
+            
+            // Poblar dropdown con nombres ordenados
+            const nombres = datosOriginales.features.map(f => f.properties.NOMBRE || f.properties.nombre).sort();
+            nombres.forEach(n => {
                 const o = document.createElement('option');
                 o.value = n; o.innerText = n; sel.appendChild(o);
             });
+
             renderizarMapa();
             map.fitBounds(geojsonLayer.getBounds());
-        } catch (err) { alert("Error al cargar GeoJSON"); }
+        } catch (err) { alert("Error: " + err.message); }
     });
 
-    // Cambio de Mapa Base (CORREGIDO)
+    // Cambio de mapas base (CORREGIDO)
     document.getElementById('baseMapSelect').addEventListener('change', (e) => {
-        const selected = e.target.value;
-        // Remover todas las capas base antes de añadir la nueva
-        Object.values(baseLayers).forEach(layer => map.removeLayer(layer));
-        baseLayers[selected].addTo(map);
+        Object.values(baseLayers).forEach(l => map.removeLayer(l));
+        baseLayers[e.target.value].addTo(map);
     });
 
+    // Listeners de controles
     document.getElementById('classificationSelect').addEventListener('change', renderizarMapa);
     document.getElementById('paletteSelect').addEventListener('change', renderizarMapa);
     
+    // Listener del buscador/selector (Dropdown -> Mapa)
     document.getElementById('labelSelect').addEventListener('change', (e) => {
-        const val = e.target.value;
+        const buscado = e.target.value;
+        if (!buscado) return;
         geojsonLayer.eachLayer(l => {
             const n = l.feature.properties.NOMBRE || l.feature.properties.nombre;
-            if (n === val) l.fire('click');
+            if (n === buscado) l.fire('click');
         });
     });
 });
