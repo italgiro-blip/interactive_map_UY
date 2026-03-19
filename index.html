@@ -1,158 +1,70 @@
-/* ==========================================================================
-   1. BASE Y CONFIGURACIÓN GLOBAL
-   ========================================================================== */
-html, body { 
-    margin: 0; padding: 0; width: 100vw; height: 100vh; 
-    font-family: 'Roboto Condensed', sans-serif; 
-    background: #121212; overflow: hidden; color: #D9D9D9;
-}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Geoestadístico</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-#map { 
-    position: absolute; top: 0; bottom: 0; left: 0; right: 0; 
-    z-index: 1; background: #0f121a;
-}
+    <div class="map-overlay-header">
+        <div class="header-content">
+            <h1 id="mainTitle">Análisis Geográfico de Tasas</h1>
+        </div>
+    </div>
 
-/* Ajuste de profundidad para controles de Leaflet */
-.leaflet-top, .leaflet-bottom { z-index: 900 !important; }
+    <div class="controls">
+        <label>Mapa Base
+            <select id="baseMapSelect">
+                <option value="dark">Carto Dark</option>
+                <option value="streets">OpenStreetMap</option>
+                <option value="satellite">Satélite</option>
+            </select>
+        </label>
 
-/* ==========================================================================
-   2. HEADER (Logo y Título Principal)
-   ========================================================================== */
-.map-overlay-header { 
-    position: absolute; top: 0; left: 0; right: 0; z-index: 1000; 
-    display: flex; justify-content: center; pointer-events: none; 
-}
+        <div class="separator"></div>
+        <button id="btnCargarGeoJSON" class="map-button">Cargar Datos</button>
+        <div class="separator"></div>
 
-.header-content { 
-    background: rgba(18, 18, 18, 0.95); padding: 10px 40px; 
-    border-radius: 0 0 15px 15px; border-bottom: 3px solid #2A3180; 
-    display: flex; align-items: center; gap: 15px; pointer-events: auto; 
-    box-shadow: 0 4px 20px rgba(0,0,0,0.8);
-}
+        <label>Clasificación
+            <select id="classificationSelect">
+                <option value="quintile">Quintiles (Equitativo)</option>
+                <option value="equal">Intervalos Iguales</option>
+                <option value="jenks">Natural Breaks (Jenks)</option>
+            </select>
+        </label>
 
-.map-logo { height: 45px; width: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
-#mainTitle { margin: 0; font-size: 19px; color: #D9D9D9; text-transform: uppercase; letter-spacing: 1.5px; }
+        <label>Paleta
+            <select id="paletteSelect">
+                <option value="blues">Azules</option>
+                <option value="reds">Rojos</option>
+                <option value="greens">Verdes</option>
+                <option value="purples">Púrpuras</option>
+                <option value="yellows">Naranjas</option>
+            </select>
+        </label>
 
-/* ==========================================================================
-   3. PANEL DE CONTROLES (Lateral Superior Izquierdo)
-   ========================================================================== */
-.controls { 
-    position: absolute; top: 85px; left: 20px; z-index: 1000; 
-    background: rgba(25, 25, 25, 0.95); padding: 20px; width: 260px; 
-    border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.7); 
-    border: 1px solid rgba(255,255,255,0.1); max-height: 75vh; overflow-y: auto;
-}
+        <div class="separator"></div>
 
-.controls::-webkit-scrollbar { width: 5px; }
-.controls::-webkit-scrollbar-thumb { background: #2A3180; border-radius: 10px; }
+        <label>Buscador
+            <select id="labelSelect">
+                <option value="">Seleccione Unidad...</option>
+            </select>
+        </label>
 
-label { 
-    font-size: 10px; color: #888; font-weight: bold; 
-    display: flex; flex-direction: column; gap: 6px; 
-    margin-bottom: 15px; text-transform: uppercase; 
-}
+        <div id="infoCard" class="info-card" style="display:none;">
+            <p id="detailNome"><b>Unidad:</b> --</p>
+            <p id="detailTaxa"><b>Valor:</b> --</p>
+        </div>
+    </div>
 
-select { 
-    background: #1a1a1a; color: #fff; border: 1px solid #2A3180; 
-    padding: 8px; border-radius: 6px; cursor: pointer;
-}
+    <div id="map"></div>
 
-.separator { height: 1px; background: rgba(255,255,255,0.1); margin: 15px 0; }
-
-/* Botón de Acción */
-.map-button { 
-    width: 100%; background: #2A3180; color: #fff; border: none; 
-    padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; 
-    transition: 0.3s; text-transform: uppercase; 
-}
-.map-button:hover { background: #3e48b8; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(42, 49, 128, 0.4); }
-.map-button:disabled { background: #444 !important; opacity: 0.7; cursor: not-allowed; }
-
-/* Caja de Info (Aparece al hacer click) */
-.info-card { 
-    margin-top: 10px; padding: 12px; background: rgba(42, 49, 128, 0.15); 
-    border: 1px solid #2A3180; border-radius: 8px;
-    animation: fadeIn 0.4s ease-out; 
-}
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-/* ==========================================================================
-   4. IMÁGENES INSTITUCIONALES (Rescatadas - Inferior Izquierda)
-   ========================================================================== */
-.side-images {
-    position: absolute;
-    bottom: 30px; 
-    left: 20px; 
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    pointer-events: none;
-}
-
-.side-image {
-    width: 110px; /* Tamaño equilibrado */
-    height: auto;
-    border-radius: 6px;
-    border: 2px solid rgba(42, 49, 128, 0.6);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.8);
-    pointer-events: auto;
-    transition: transform 0.3s ease;
-    background: #fff; /* Asegura visibilidad si hay transparencias */
-}
-
-.side-image:hover { transform: scale(1.1); border-color: #fff; }
-
-/* ==========================================================================
-   5. LEYENDA (Inferior Derecha)
-   ========================================================================== */
-.legend-horizontal { 
-    background: rgba(18, 18, 18, 0.95); padding: 12px 18px; 
-    border-radius: 8px; border: 1px solid #2A3180; 
-    margin-bottom: 30px !important; margin-right: 20px !important;
-}
-
-.legend-container { display: flex; gap: 6px; align-items: flex-end; }
-
-.legend-item { 
-    flex: 1; min-width: 60px; text-align: center; 
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-}
-
-.legend-color { height: 10px; border-radius: 2px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.2); }
-.legend-text { color: #aaa; font-size: 9px; font-weight: bold; white-space: nowrap; }
-
-/* Resaltado cuando seleccionas en el mapa */
-.active-legend { 
-    transform: translateY(-10px) scale(1.15); 
-    background: rgba(255, 255, 255, 0.05); 
-    border-radius: 4px; padding: 4px;
-}
-.active-legend .legend-text { color: #fff; text-shadow: 0 0 5px #2A3180; }
-
-/* ==========================================================================
-   6. TOOLTIP Y OTROS (Leaflet UI)
-   ========================================================================== */
-.custom-tooltip {
-    background: rgba(26, 26, 26, 0.9) !important; 
-    border: 1px solid #2A3180 !important;
-    color: #fff !important; font-weight: bold; padding: 6px 12px; 
-    border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    font-size: 13px;
-}
-
-.spinner {
-    display: inline-block; width: 12px; height: 12px; 
-    border: 2px solid rgba(255,255,255,0.3); border-radius: 50%;
-    border-top-color: #fff; animation: spin 1s linear infinite; margin-right: 8px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ==========================================================================
-   7. RESPONSIVE (Móviles)
-   ========================================================================== */
-@media (max-width: 768px) {
-    .controls { top: auto; bottom: 0; left: 0; right: 0; width: 100%; max-height: 30vh; border-radius: 15px 15px 0 0; }
-    .side-images { display: none; } /* Ocultamos imágenes en móvil para espacio */
-    .legend-horizontal { bottom: 32vh !important; transform: scale(0.8); width: 95%; margin: 0 auto !important; }
-}
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
