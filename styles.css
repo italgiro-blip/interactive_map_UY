@@ -1,63 +1,40 @@
-/* BASE Y LAYOUT */
-html, body { 
-    margin: 0; padding: 0; width: 100vw; height: 100vh; 
-    font-family: 'Roboto Condensed', sans-serif; 
-    background: #121212; overflow: hidden; color: #D9D9D9;
+/* ... (estilos anteriores) ... */
+
+/* Estilos para el logotipo en el encabezado */
+.map-logo { 
+    height: 40px; /* Ajusta la altura según sea necesario */
+    width: auto;
+    margin-right: 15px; /* Espacio entre logo y título */
 }
 
-#map { position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: 1; background: #0f121a; }
-.leaflet-top, .leaflet-bottom { z-index: 999 !important; }
+/* ... (estilos anteriores) ... */
 
-/* HEADER */
-.map-overlay-header { 
-    position: absolute; top: 0; left: 0; right: 0; z-index: 1000; 
-    display: flex; justify-content: center; pointer-events: none; 
+/* Estilos para el contenedor de imágenes laterales */
+.side-images {
+    position: absolute;
+    top: 70px; /* Alineado con el panel de controles, ajusta si es necesario */
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Espacio entre imágenes */
+    pointer-events: none; /* Permite interactuar con el mapa a través del contenedor si está vacío */
 }
-.header-content { 
-    background: rgba(18, 18, 18, 0.95); padding: 10px 40px; 
-    border-radius: 0 0 15px 15px; border-bottom: 3px solid #2A3180; 
-    display: flex; align-items: center; gap: 15px; pointer-events: auto; 
-    box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+
+/* Estilos para cada imagen lateral */
+.side-image {
+    width: 150px; /* Ajusta el ancho según sea necesario */
+    height: auto;
+    border-radius: 8px;
+    border: 2px solid #2A3180; /* Borde a juego con el diseño */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    pointer-events: auto; /* Permite interactuar con las imágenes (ej. hover) si añades efectos */
 }
-#mainTitle { margin: 0; font-size: 19px; text-transform: uppercase; letter-spacing: 1.5px; }
 
-/* PANEL DE CONTROLES */
-.controls { 
-    position: absolute; top: 85px; left: 20px; z-index: 1000; 
-    background: rgba(25, 25, 25, 0.95); padding: 20px; width: 260px; 
-    border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.7); 
-    border: 1px solid rgba(255,255,255,0.1); max-height: 80vh; overflow-y: auto;
-}
-.separator { height: 1px; background: rgba(255,255,255,0.1); margin: 15px 0; }
-label { font-size: 10px; color: #888; font-weight: bold; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; text-transform: uppercase; }
-select { background: #1a1a1a; color: #fff; border: 1px solid #2A3180; padding: 8px; border-radius: 6px; width: 100%; cursor: pointer; }
-
-.map-button { 
-    width: 100%; background: #2A3180; color: #fff; border: none; 
-    padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; 
-    transition: all 0.3s ease; text-transform: uppercase; 
-}
-.map-button:hover { background: #3e48b8; transform: translateY(-2px); }
-
-/* INFO CARD */
-.info-card { margin-top: 10px; padding: 12px; background: rgba(42, 49, 128, 0.1); border: 1px solid #2A3180; border-radius: 8px; animation: fadeInSlide 0.4s ease-out; }
-.info-card p { margin: 5px 0; font-size: 14px; color: #D9D9D9; }
-
-/* LEYENDA */
-.legend-horizontal { background: rgba(18, 18, 18, 0.9); padding: 10px 15px; border-radius: 8px; border: 1px solid #2A3180; }
-.legend-container { display: flex; gap: 5px; align-items: flex-end; }
-.legend-item { flex: 1; min-width: 55px; text-align: center; display: flex; flex-direction: column; align-items: center; transition: all 0.4s ease; }
-.legend-color { height: 10px; width: 100%; border-radius: 2px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.2); }
-.legend-text { color: #aaa; font-size: 9px; font-weight: bold; }
-.active-legend { transform: translateY(-8px) scale(1.1); background: rgba(42, 49, 128, 0.3); border: 1px solid #2A3180; border-radius: 4px; padding: 4px; }
-.active-legend .legend-text { color: #fff; }
-
-.custom-tooltip { background: rgba(26, 26, 26, 0.95) !important; border: 1px solid #2A3180 !important; color: #fff !important; font-weight: bold !important; padding: 8px 12px !important; border-radius: 4px !important; font-family: 'Roboto Condensed', sans-serif !important; }
-
-@keyframes fadeInSlide { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-/* RESPONSIVE */
+/* Ajuste para Mobile */
 @media (max-width: 768px) {
-    .controls { top: auto; bottom: 0; left: 0; right: 0; width: 100%; max-height: 35vh; border-radius: 15px 15px 0 0; }
-    .legend-horizontal { bottom: 36vh !important; transform: scale(0.8); width: 90%; margin-right: 5% !important; }
+    /* ... (estilos mobile anteriores) ... */
+    
+    /* Ocultar imágenes laterales en mobile */
+    .side-images { display: none; }
 }
