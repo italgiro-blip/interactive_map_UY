@@ -1,12 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. MAPAS BASE
+    // 1. CONFIGURACIÓN INICIAL Y MAPAS BASE
     const baseLayers = {
         dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'),
         streets: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
         satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}')
     };
 
-    const map = L.map('map', { zoomControl: false, layers: [baseLayers.dark] }).setView([-32.5228, -55.7658], 7);
+    const map = L.map('map', { 
+        zoomControl: false, 
+        layers: [baseLayers.dark] 
+    }).setView([-32.5228, -55.7658], 7); // Centrado en Uruguay
+
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 
     let geojsonLayer, currentData, currentBreaks = [];
@@ -19,13 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     let currentPalette = colorSchemes.blues;
 
-    // Función auxiliar para buscar nombres de campos (agregamos 'tasa_promedio' y 'nombre')
+    // Función para buscar campos dinámicamente (case-insensitive)
     const getProp = (p, keys) => {
         const found = Object.keys(p).find(k => keys.includes(k.toLowerCase()));
         return found ? p[found] : null;
     };
 
-    // 2. LÓGICA ESTADÍSTICA
+    // 2. LÓGICA ESTADÍSTICA (CÁLCULO DE RANGOS)
     function computeBreaks(data, method) {
         const vals = data.features
             .map(f => parseFloat(getProp(f.properties, ['tasa_promedio', 'taxa', 'rate', 'tasa', 'valor'])) || 0)
@@ -47,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return currentPalette[4];
     }
 
-    // 3. ACTUALIZACIÓN DEL MAPA (Aquí incluimos nombre y valor en etiqueta)
+    // 3. RENDERIZADO DEL MAPA E INTERACCIÓN
     function renderMap(data) {
         if (!data) return;
         currentBreaks = computeBreaks(data, document.getElementById('classificationSelect').value);
@@ -59,34 +63,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 weight: 1.5, color: 'white', fillOpacity: 0.8
             }),
             onEachFeature: (f, layer) => {
-                // Seleccionamos los campos nombre y valor
                 const n = getProp(f.properties, ['nombre', 'name', 'departamento']);
                 const t = getProp(f.properties, ['tasa_promedio', 'taxa', 'rate', 'tasa', 'valor']) || 0;
 
-                // AÑADIMOS LA ETIQUETA INTERACTIVA (Tooltip)
-                layer.bindTooltip(`<strong>${n}</strong><br>Valor: ${t}`, {
-                    sticky: true,
-                    direction: 'top'
-                });
+                // Etiqueta flotante
+                layer.bindTooltip(`<b>${n}</b><br>Valor: ${t}`, { sticky: true });
 
-                // LÓGICA DE CLIC (Detalle lateral)
+                // Evento Clic Manual
                 layer.on('click', () => {
-                    document.getElementById('detailNome').innerHTML = `<b>Unidad:</b> ${n}`;
-                    document.getElementById('detailTaxa').innerHTML = `<b>Valor:</b> ${t}%`;
-                    geojsonLayer.setStyle({ weight: 1.5, color: 'white' });
-                    layer.setStyle({ weight: 4, color: '#FFD700' });
-                    layer.bringToFront();
+                    actualizarDetalleUI(n, t);
+                    resaltarPoligono(layer);
                 });
             }
         }).addTo(map);
         updateLegend();
     }
 
+    // Funciones de apoyo para la UI
+    function actualizarDetalleUI(nombre, valor) {
+        const elNome = document.getElementById('detailNome');
+        const elTaxa = document.getElementById('detailTaxa');
+        if (elNome) elNome.innerHTML = `<b>Unidad:</b> ${nombre}`;
+        if (elTaxa) elTaxa.innerHTML = `<b>Valor:</b> ${valor}%`;
+    }
+
+    function resaltarPoligono(layer) {
+        geojsonLayer.setStyle({ weight: 1.5, color: 'white', fillOpacity: 0.8 });
+        layer.setStyle({ weight: 4, color: '#FFD700', fillOpacity: 0.9 });
+        layer.bringToFront();
+    }
+
     function updateLegend() {
         const container = document.querySelector('.legend-horizontal') || L.DomUtil.create('div', 'legend-horizontal');
-        let html = '<div class="legend-container">';
+        let html = '<div class="legend-container" style="display:flex; gap:10px; background:white; padding:5px; border-radius:5px;">';
         for (let i = 0; i < 5; i++) {
-            html += `<div class="legend-item"><div class="legend-color" style="background:${currentPalette[i]}"></div><div class="legend-text">${currentBreaks[i].toFixed(1)}</div></div>`;
+            html += `<div class="legend-item"><div class="legend-color" style="width:20px;height:20px;background:${currentPalette[i]}"></div><span>${currentBreaks[i].toFixed(1)}</span></div>`;
         }
         container.innerHTML = html + '</div>';
         if (!document.querySelector('.legend-horizontal')) {
@@ -96,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 4. EVENTOS
+    // 4. EVENTOS Y CARGA DE DATOS
     document.getElementById('btnCargarGeoJSON').onclick = () => {
         fetch('tasas_H_dep.geojson')
             .then(r => r.json())
@@ -105,17 +116,49 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderMap(data);
                 map.fitBounds(geojsonLayer.getBounds(), { padding: [30, 30] });
                 
+                // Llenar el desplegable
                 const select = document.getElementById('labelSelect');
-                select.innerHTML = '<option value="">Seleccionar...</option>';
-                data.features.forEach(f => {
-                    const name = getProp(f.properties, ['nombre', 'name', 'departamento']);
-                    if(name) select.add(new Option(name, name));
-                });
-            }).catch(e => alert("Error al cargar 'tasas_H_dep.geojson'."));
+                select.innerHTML = '<option value="">Seleccionar departamento...</option>';
+                
+                // Ordenar alfabéticamente antes de llenar
+                const nombres = data.features
+                    .map(f => getProp(f.properties, ['nombre', 'name', 'departamento']))
+                    .filter(n => n)
+                    .sort();
+
+                nombres.forEach(name => select.add(new Option(name, name)));
+
+            }).catch(e => console.error("Error al cargar datos:", e));
     };
 
+    // EVENTO DEL DESPLEGABLE (ZOOM + VALORES)
+    document.getElementById('labelSelect').onchange = (e) => {
+        const seleccionado = e.target.value;
+        if (!seleccionado || !geojsonLayer) return;
+
+        geojsonLayer.eachLayer((layer) => {
+            const n = getProp(layer.feature.properties, ['nombre', 'name', 'departamento']);
+            const t = getProp(layer.feature.properties, ['tasa_promedio', 'taxa', 'rate', 'tasa', 'valor']) || 0;
+
+            if (n === seleccionado) {
+                // Zoom al departamento seleccionado
+                map.fitBounds(layer.getBounds(), { padding: [100, 100], maxZoom: 10 });
+                // Actualizar recuadros
+                actualizarDetalleUI(n, t);
+                // Resaltar en el mapa
+                resaltarPoligono(layer);
+                // Abrir etiqueta
+                layer.openTooltip();
+            }
+        });
+    };
+
+    // Resto de controles (Paleta, Clasificación, Base)
     document.getElementById('classificationSelect').onchange = () => renderMap(currentData);
-    document.getElementById('paletteSelect').onchange = (e) => { currentPalette = colorSchemes[e.target.value]; renderMap(currentData); };
+    document.getElementById('paletteSelect').onchange = (e) => { 
+        currentPalette = colorSchemes[e.target.value]; 
+        renderMap(currentData); 
+    };
     document.getElementById('baseMapSelect').onchange = (e) => {
         Object.values(baseLayers).forEach(l => map.removeLayer(l));
         baseLayers[e.target.value].addTo(map);
