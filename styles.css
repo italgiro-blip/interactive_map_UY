@@ -93,19 +93,24 @@ select {
 
 .side-image:hover { transform: scale(1.1) rotate(2deg); }
 
-/* 5. LEYENDA Y ESCALA (DINÁMICAS) */
+/* Busca este bloque y reemplázalo todo, no dejes nada del anterior */
 .legend-horizontal { 
-  background: rgba(10, 10, 10, 0.95) !important; 
-    padding: 6px 10px !important; /* El marco ahora es mínimo */
-    border: 0.5px solid rgba(255, 255, 255, 0.15); /* Borde blanco muy tenue */
-    border-radius: 2px; /* Esquinas casi rectas, estilo militar/técnico */
-    box-shadow: 0 2px 8px rgba(0,0,0,0.8);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 300px;
+    background: rgba(10, 10, 10, 0.95) !important; 
+    padding: 5px 10px !important; /* <--- Esto es lo que la hace fina */
+    height: auto !important; 
+    min-width: 280px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
 }
 
+.legend-horizontal div:first-child {
+    font-size: 9px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 2.5px !important;
+    color: #555 !important;
+    margin-bottom: 4px !important;
+}
 .legend-container { display: flex; gap: 8px; min-width: 200px; }
 
 .legend-item { flex: 1; text-align: center; }
