@@ -95,14 +95,15 @@ select {
 
 /* 5. LEYENDA Y ESCALA (DINÁMICAS) */
 .legend-horizontal { 
-  background: rgba(18, 18, 18, 0.9) !important; 
-    padding: 15px 25px !important; /* <--- AQUÍ ESTÁ EL CAMBIO */
-    border-radius: 8px; 
-    border: 1px solid #2A3180; 
-    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+  background: rgba(15, 15, 15, 0.9) !important; 
+    padding: 8px 12px !important; /* Reducimos el grosor del marco */
+    border: 1px solid rgba(42, 49, 128, 0.6); 
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     display: flex;
     flex-direction: column;
     align-items: center;
+    min-width: 320px; /* Ancho total contenido */
 }
 
 .legend-container { display: flex; gap: 8px; min-width: 200px; }
