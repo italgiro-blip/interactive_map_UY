@@ -80,6 +80,10 @@ document.addEventListener('DOMContentLoaded', () => {
         updateLegend();
     }
 
+
+
+
+
     // 4. LEYENDA (BAR SCALE) SIN MARCO Y ESTIRADA
     function updateLegend() {
         let container = document.querySelector('.legend-horizontal');
@@ -101,13 +105,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const high = currentBreaks[i+1];
             const color = currentPalette[i];
 
-            html += `
-                <div id="leg-block-${i}" style="display: flex; flex-direction: column; align-items: center; position: relative;">
-                    <div style="background:${color}; width: 75px; height: 25px; border: 0.5px solid rgba(255,255,255,0.4); transition: all 0.2s;"></div>
-                    <span style="position: absolute; left: 0; bottom: -24px; font-size: 14px; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000;">${low.toFixed(1)}</span>
-                    ${i === 4 ? `<span style="position: absolute; right: 0; bottom: -24px; font-size: 14px; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000;">${high.toFixed(1)}</span>` : ''}
-                </div>`;
-        }
+                html += `
+        <div id="leg-block-${i}" style="display: flex; flex-direction: column; align-items: center; width: 80px; position: relative;">
+            <div style="background:${color}; width: 100%; height: 25px; border: 0.5px solid rgba(255,255,255,0.4); transition: all 0.2s;"></div>
+            
+            <span style="font-size: 13px; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000; margin-top: 5px;">
+                ${low.toFixed(1)}
+            </span>
+
+            ${i === 4 ? `
+            <span style="font-size: 13px; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000; margin-top: 5px; position: absolute; right: -15px; bottom: 0;">
+                ${high.toFixed(1)}
+            </span>` : ''}
+        </div>`;
+}
         container.innerHTML = html + '</div>';
     }
 
