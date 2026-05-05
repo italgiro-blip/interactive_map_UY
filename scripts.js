@@ -1,11 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Configuración de Mapas Base
+    // 1. CONFIGURACIÓN DE MAPA Y CAPAS
     const baseLayers = {
         dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'),
         streets: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
         satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}')
     };
 
+    // Centrado en Uruguay por defecto, zoom 7
     const map = L.map('map', { zoomControl: false, layers: [baseLayers.dark] }).setView([-32.5228, -55.7658], 7);
 
     const labelSelect = document.getElementById('labelSelect');
@@ -13,9 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const paletteSelect = document.getElementById('paletteSelect');
     const baseMapSelect = document.getElementById('baseMapSelect');
     
-    let geojsonLayer, legend, currentBreaks = [];
+    let geojsonLayer, legendControl, currentBreaks = [];
 
-    // 2. Definición de Paletas
     const colorSchemes = {
         reds: ['#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15'],
         purples: ['#f2f0f7', '#cbc9e2', '#9e9ac8', '#756bb1', '#54278f'],
@@ -26,20 +26,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentPalette = colorSchemes.blues;
 
-    // 1. Modificamos el buscador de propiedades para que sea más flexible
-const getProp = (props, keys) => {
-    // Busca la primera coincidencia sin importar mayúsculas/minúsculas o espacios
-    const found = Object.keys(props).find(k => 
-        keys.includes(k.toLowerCase().trim())
-    );
-    return found ? props[found] : null;
-};
+    // 2. UTILIDADES
+    const getProp = (props, keys) => {
+        const found = Object.keys(props).find(k => keys.includes(k.toLowerCase().trim()));
+        return found ? props[found] : null;
+    };
 
-    // --- CORRECCIÓN AQUÍ: Función computeBreaks cerrada correctamente ---
     function computeBreaks(data, method) {
         const vals = data.features
             .map(f => parseFloat(getProp(f.properties, ['tasa_promedio', 'tasa', 'valor', 'taxa'])) || 0)
             .sort((a, b) => a - b);
+        
+        if (vals.length === 0) return [0, 0, 0, 0, 0, 0];
         const min = vals[0], max = vals[vals.length - 1];
         
         if (method === 'equal') {
@@ -51,7 +49,6 @@ const getProp = (props, keys) => {
         }
     }
 
-    // --- CORRECCIÓN AQUÍ: Nueva función getColor ---
     function getColor(v, brk) {
         for (let i = 0; i < 5; i++) {
             if (v >= brk[i] && v <= brk[i + 1]) return currentPalette[i];
@@ -59,87 +56,101 @@ const getProp = (props, keys) => {
         return currentPalette[4];
     }
 
-    // Carga y Dibujo
+    // 3. RENDERIZADO Y LEYENDA
+    function updateLegend() {
+        if (legendControl) map.removeControl(legendControl);
+        
+        legendControl = L.control({ position: 'bottomright' });
+        legendControl.onAdd = () => {
+            const div = L.DomUtil.create('div', 'legend-horizontal');
+            div.style.background = "transparent";
+            
+            let html = `<div style="font-size: 12px; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000; margin-bottom: 8px; text-align:center;">ESCALA DE VALORES</div>
+                        <div style="display: flex; align-items: flex-end;">`;
+
+            for (let i = 0; i < 5; i++) {
+                const low = currentBreaks[i];
+                const high = currentBreaks[i+1];
+                html += `
+                    <div class="legend-item" 
+                         style="display: flex; flex-direction: column; align-items: center; width: 70px; position: relative;"
+                         onmouseover="highlightRange(${low}, ${high})" 
+                         onmouseout="resetHighlight()">
+                        <div style="background:${currentPalette[i]}; width: 100%; height: 18px; border: 0.5px solid rgba(255,255,255,0.4);"></div>
+                        <span style="font-size: 11px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; margin-top: 4px;">
+                            ${low.toFixed(1)}
+                        </span>
+                        ${i === 4 ? `<span style="font-size: 11px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; position: absolute; right: 0; bottom: 0;">${high.toFixed(1)}</span>` : ''}
+                    </div>`;
+            }
+            div.innerHTML = html + '</div>';
+            return div;
+        };
+        legendControl.addTo(map);
+    }
+
+    // 4. CARGA DE DATOS
     document.getElementById('btnCargarGeoJSON').onclick = () => {
         fetch('tasas_H_dep.geojson')
             .then(res => res.json())
             .then(data => {
                 currentBreaks = computeBreaks(data, classificationSelect.value);
                 if (geojsonLayer) map.removeLayer(geojsonLayer);
+                
                 labelSelect.innerHTML = '<option value="">Seleccione...</option>';
 
-                // 2. En la carga del GeoJSON (dentro del fetch)
-geojsonLayer = L.geoJSON(data, {
-    style: (f) => {
-        // Buscamos 'taxa'
-        const valorTaxa = parseFloat(getProp(f.properties, ['taxa', 'tasa'])) || 0;
-        return {
-            fillColor: getColor(valorTaxa, currentBreaks),
-            weight: 1.5, 
-            color: 'white', 
-            fillOpacity: 0.75
-        };
-    },
-                   onEachFeature: (f, layer) => {
-        // Buscamos 'nome' y 'taxa' explícitamente
-        const nome = getProp(f.properties, ['nome', 'name']) || "Sin nombre";
-        const taxa = getProp(f.properties, ['taxa', 'tasa']) || 0;
-        
-        layer.on('click', () => seleccionarFreguesia(nome, taxa, layer));
-        
-        // Llenar el selector
-        labelSelect.add(new Option(nome, nome));
-    }
-}).addTo(map);
-                addLegend();
-                map.fitBounds(geojsonLayer.getBounds());
-            });
+                geojsonLayer = L.geoJSON(data, {
+                    style: (f) => {
+                        const val = parseFloat(getProp(f.properties, ['taxa', 'tasa', 'tasa_promedio', 'valor'])) || 0;
+                        return {
+                            fillColor: getColor(val, currentBreaks),
+                            weight: 1.5, color: 'white', fillOpacity: 0.75
+                        };
+                    },
+                    onEachFeature: (f, layer) => {
+                        const nome = getProp(f.properties, ['nome', 'name', 'departamento']) || "Sin nombre";
+                        const taxa = parseFloat(getProp(f.properties, ['taxa', 'tasa', 'tasa_promedio', 'valor'])) || 0;
+                        
+                        layer.on('click', () => {
+                            document.getElementById('detailNome').innerHTML = `<b>Unidad:</b> ${nome}`;
+                            document.getElementById('detailTaxa').innerHTML = `<b>Valor:</b> ${taxa}%`;
+                            labelSelect.value = nome;
+                            
+                            geojsonLayer.eachLayer(l => geojsonLayer.resetStyle(l));
+                            layer.setStyle({ color: '#ff8c1a', weight: 5, fillOpacity: 0.9 });
+                            layer.bindTooltip(`<b>${nome}</b><br>${taxa}%`).openTooltip();
+                        });
+                        
+                        labelSelect.add(new Option(nome, nome));
+                    }
+                }).addTo(map);
+
+                updateLegend();
+                map.fitBounds(geojsonLayer.getBounds(), { padding: [30, 30] });
+            })
+            .catch(err => console.error("Error al cargar GeoJSON:", err));
     };
 
-    function seleccionarFreguesia(nome, taxa, layer) {
-        document.getElementById('detailNome').innerHTML = `<b>Nome:</b> ${nome}`;
-        document.getElementById('detailTaxa').innerHTML = `<b>Taxa:</b> ${taxa}%`;
-        labelSelect.value = nome;
-
-        geojsonLayer.eachLayer(l => {
-            geojsonLayer.resetStyle(l);
-            if (l.getTooltip()) l.unbindTooltip(); 
+    // 5. INTERACCIONES GLOBALES
+    window.highlightRange = (min, max) => {
+        if (!geojsonLayer) return;
+        geojsonLayer.eachLayer(layer => {
+            const val = parseFloat(getProp(layer.feature.properties, ['taxa', 'tasa', 'tasa_promedio', 'valor'])) || 0;
+            const isMatch = val >= min && val <= max;
+            layer.setStyle({ 
+                fillOpacity: isMatch ? 1 : 0.1, 
+                weight: isMatch ? 3 : 1 
+            });
         });
+    };
 
-        layer.setStyle({ color: '#ff8c1a', weight: 5, fillOpacity: 0.9 });
-        layer.bindTooltip(`<b>${nome}</b><br>${taxa}%`, { direction: 'center', className: 'tooltip-selected' }).openTooltip();
-        layer.bringToFront();
-        map.fitBounds(layer.getBounds(), { padding: [40, 40] });
+    window.resetHighlight = () => {
+        if (geojsonLayer) geojsonLayer.eachLayer(l => geojsonLayer.resetStyle(l));
+    };
 
-        document.querySelectorAll('.legend-item').forEach(el => el.classList.remove('active-legend'));
-        document.querySelectorAll('.legend-item').forEach((item, index) => {
-            if (taxa >= currentBreaks[index] && taxa <= currentBreaks[index + 1]) {
-                item.classList.add('active-legend');
-            }
-        });
-    }
-
-    function addLegend() {
-        if (legend) map.removeControl(legend);
-        legend = L.control({position: 'bottomright'});
-        legend.onAdd = () => {
-            const div = L.DomUtil.create('div', 'legend-horizontal');
-            let html = '<div class="legend-container">';
-            for (let i = 0; i < currentBreaks.length - 1; i++) {
-                html += `
-                    <div class="legend-item" onmouseover="highlightRange(${currentBreaks[i]}, ${currentBreaks[i+1]})" onmouseout="resetHighlight()">
-                        <div class="legend-color" style="background:${currentPalette[i]}"></div>
-                        <div class="legend-text">${currentBreaks[i].toFixed(1)}-${currentBreaks[i+1].toFixed(1)}%</div>
-                    </div>`;
-            }
-            div.innerHTML = html + '</div>';
-            return div;
-        };
-        legend.addTo(map);
-    }
-
+    // 6. EVENTOS DE SELECTORES
     baseMapSelect.onchange = (e) => {
-        Object.values(baseLayers).forEach(layer => map.removeLayer(layer));
+        Object.values(baseLayers).forEach(l => map.removeLayer(l));
         baseLayers[e.target.value].addTo(map);
     };
 
@@ -149,23 +160,13 @@ geojsonLayer = L.geoJSON(data, {
     };
 
     classificationSelect.onchange = () => document.getElementById('btnCargarGeoJSON').click();
-    
+
     labelSelect.onchange = (e) => {
         geojsonLayer.eachLayer(layer => {
-            if (getProp(layer.feature.properties, ['nome', 'name']) === e.target.value) {
-                seleccionarFreguesia(e.target.value, getProp(layer.feature.properties, ['taxa', 'rate']) || 0, layer);
+            if (getProp(layer.feature.properties, ['nome', 'name', 'departamento']) === e.target.value) {
+                layer.fire('click');
+                map.fitBounds(layer.getBounds(), { padding: [100, 100] });
             }
         });
-    };
-
-    window.highlightRange = (min, max) => {
-        if (!geojsonLayer) return;
-        geojsonLayer.eachLayer(layer => {
-            const val = parseFloat(getProp(layer.feature.properties, ['taxa', 'rate', 'tasa'])) || 0;
-            layer.setStyle(val >= min && val <= max ? { fillOpacity: 1, weight: 3 } : { fillOpacity: 0.1, weight: 1 });
-        });
-    };
-    window.resetHighlight = () => {
-        if (geojsonLayer) geojsonLayer.eachLayer(l => geojsonLayer.resetStyle(l));
     };
 });
