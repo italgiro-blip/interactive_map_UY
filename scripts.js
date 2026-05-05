@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         };
                     },
                     onEachFeature: (f, layer) => {
-                        const nome = getProp(f.properties, ['nome', 'name', 'departamento']) || "Sin nombre";
+                        const nome = getProp(f.properties, ['nome', 'name', 'NOMBRE']) || "nombre";
                         const taxa = parseFloat(getProp(f.properties, ['taxa', 'tasa', 'tasa_promedio', 'valor'])) || 0;
                         
                         layer.on('click', () => {
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     labelSelect.onchange = (e) => {
         geojsonLayer.eachLayer(layer => {
-            if (getProp(layer.feature.properties, ['nome', 'name', 'departamento']) === e.target.value) {
+            if (getProp(layer.feature.properties, ['nome', 'name', 'NOMBRE']) === e.target.value) {
                 layer.fire('click');
                 map.fitBounds(layer.getBounds(), { padding: [100, 100] });
             }
