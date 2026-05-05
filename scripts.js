@@ -108,13 +108,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         };
                     },
                     onEachFeature: (f, layer) => {
-                        const nome = getProp(f.properties, ['nome', 'name', 'NOMBRE']) || "nombre";
+                        const nome = getProp(f.properties, ['nome', 'name', 'NOMBRE']) || "NOMBRE";
                         const taxa = parseFloat(getProp(f.properties, ['taxa', 'tasa', 'tasa_promedio', 'valor'])) || 0;
                         
                         layer.on('click', () => {
                             document.getElementById('detailNome').innerHTML = `<b>Unidad:</b> ${nome}`;
                             document.getElementById('detailTaxa').innerHTML = `<b>Valor:</b> ${taxa}%`;
-                            labelSelect.value = nome;
+                            labelSelect.value = NOMBRE;
                             
                             geojsonLayer.eachLayer(l => geojsonLayer.resetStyle(l));
                             layer.setStyle({ color: '#ff8c1a', weight: 5, fillOpacity: 0.9 });
