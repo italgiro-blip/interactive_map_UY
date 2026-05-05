@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. MAPA Y CAPAS BASE
+    // 1. MAPA Y CAPAS BASE (Uruguay por defecto)
     const baseLayers = {
         dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'),
         streets: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const map = L.map('map', { zoomControl: false, layers: [baseLayers.dark] }).setView([-32.5228, -55.7658], 7);
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 
-    let geojsonLayer, currentData, currentBreaks = [];
+    let geojsonLayer, currentData, legendControl, currentBreaks = [];
     const colorSchemes = {
         blues: ['#eff3ff', '#bdd7e7', '#6baed6', '#3182bd', '#08519c'],
         reds: ['#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15'],
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return 4;
     }
 
-    // 3. RENDERIZADO E INTERACCIÓN CRUZADA
+    // 3. RENDERIZADO
     function renderMap(data) {
         if (!data) return;
         currentBreaks = computeBreaks(data, document.getElementById('classificationSelect').value);
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         geojsonLayer = L.geoJSON(data, {
             style: (f) => ({
-                fillColor: colorSchemes[document.getElementById('paletteSelect').value][getColorIndex(parseFloat(getProp(f.properties, ['tasa_promedio', 'tasa', 'valor'])) || 0, currentBreaks)],
+                fillColor: currentPalette[getColorIndex(parseFloat(getProp(f.properties, ['tasa_promedio', 'tasa', 'valor'])) || 0, currentBreaks)],
                 weight: 1.2, color: 'white', fillOpacity: 0.8
             }),
             onEachFeature: (f, layer) => {
@@ -63,11 +63,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 layer.on({
                     mouseover: (e) => {
                         const index = getColorIndex(t, currentBreaks);
-                        resaltarBloqueLegenda(index); // Acción en la barra
+                        resaltarBloqueLegenda(index);
                         layer.setStyle({ weight: 3, color: '#FFD700', fillOpacity: 1 });
                     },
                     mouseout: (e) => {
-                        resetBloqueLegenda(); // Reset barra
+                        resetBloqueLegenda();
                         geojsonLayer.resetStyle(e.target);
                     },
                     click: () => {
@@ -80,54 +80,46 @@ document.addEventListener('DOMContentLoaded', () => {
         updateLegend();
     }
 
+    // 4. LEYENDA (BAR SCALE) - CORREGIDA
+    function updateLegend() {
+        if (legendControl) map.removeControl(legendControl);
+        
+        legendControl = L.control({ position: 'bottomright' });
+        
+        legendControl.onAdd = function() {
+            const div = L.DomUtil.create('div', 'legend-horizontal');
+            div.style.background = "transparent";
+            
+            let html = `<div style="font-size: 12px; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000; margin-bottom: 5px;">ESCALA DE VALORES</div>
+                        <div style="display: flex; align-items: flex-start;">`;
 
-
-
-
-    /function addLegend() {
-    // ...
-    for (let i = 0; i < currentBreaks.length - 1; i++) {
-        html += `
-            <div class="legend-item" ...>
-                <div class="legend-color" style="background:${currentPalette[i]}"></div>
-                <div class="legend-text">${currentBreaks[i].toFixed(1)}-${currentBreaks[i+1].toFixed(1)}%</div>
-            </div>`;
-    }
-    // ...
-}
-        let html = `<div style="font-size: 13px; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000; margin-bottom: 12px;">ESCALA DE VALORES</div>
-                    <div style="display: flex; align-items: flex-start;">`;
-
-        for (let i = 0; i < 5; i++) {
-            const low = currentBreaks[i];
-            const high = currentBreaks[i+1];
-            const color = currentPalette[i];
+            for (let i = 0; i < 5; i++) {
+                const low = currentBreaks[i];
+                const high = currentBreaks[i+1];
+                const color = currentPalette[i];
 
                 html += `
-        <div id="leg-block-${i}" style="display: flex; flex-direction: column; align-items: center; width: 80px; position: relative;">
-            <div style="background:${color}; width: 100%; height: 25px; border: 0.5px solid rgba(255,255,255,0.4); transition: all 0.2s;"></div>
-            
-            <span style="font-size: 13px; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000; margin-top: 5px;">
-                ${low.toFixed(1)}
-            </span>
-
-            ${i === 4 ? `
-            <span style="font-size: 13px; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000; margin-top: 5px; position: absolute; right: -15px; bottom: 0;">
-                ${high.toFixed(1)}
-            </span>` : ''}
-        </div>`;
-}
-        container.innerHTML = html + '</div>';
+                    <div id="leg-block-${i}" style="display: flex; flex-direction: column; align-items: center; width: 60px; position: relative;">
+                        <div style="background:${color}; width: 100%; height: 15px; border: 0.5px solid rgba(255,255,255,0.4); transition: all 0.2s;"></div>
+                        <span style="font-size: 10px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; margin-top: 3px;">
+                            ${low.toFixed(1)}
+                        </span>
+                        ${i === 4 ? `<span style="font-size: 10px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; position: absolute; right: 0; top: 18px;">${high.toFixed(1)}</span>` : ''}
+                    </div>`;
+            }
+            div.innerHTML = html + '</div>';
+            return div;
+        };
+        legendControl.addTo(map);
     }
 
-    // FUNCIONES DE SINCRONIZACIÓN (MAPA -> BARRA)
+    // FUNCIONES DE SINCRONIZACIÓN
     window.resaltarBloqueLegenda = (index) => {
         const block = document.getElementById(`leg-block-${index}`);
         if (block) {
-            // Resalte sutil: Borde dorado y opacidad total
             block.firstElementChild.style.borderColor = "#FFD700";
             block.firstElementChild.style.borderWidth = "2px";
-            block.firstElementChild.style.zIndex = "10";
+            block.firstElementChild.style.transform = "scaleY(1.2)";
         }
     };
 
@@ -137,35 +129,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (block) {
                 block.firstElementChild.style.borderColor = "rgba(255,255,255,0.4)";
                 block.firstElementChild.style.borderWidth = "0.5px";
+                block.firstElementChild.style.transform = "scaleY(1)";
             }
         }
     };
 
-    // 5. CARGA Y SELECTORES
+    // 5. EVENTOS
     document.getElementById('btnCargarGeoJSON').onclick = () => {
         fetch('tasas_H_dep.geojson').then(r => r.json()).then(data => {
             currentData = data;
             renderMap(data);
             map.fitBounds(geojsonLayer.getBounds(), { padding: [30, 30] });
+            
             const select = document.getElementById('labelSelect');
             select.innerHTML = '<option value="">Seleccionar departamento...</option>';
             const nombres = data.features.map(f => getProp(f.properties, ['nombre', 'name', 'departamento'])).filter(n => n).sort();
             nombres.forEach(name => select.add(new Option(name, name)));
-        });
-    };
-
-    document.getElementById('labelSelect').onchange = (e) => {
-        const sel = e.target.value;
-        if (!sel) return;
-        geojsonLayer.eachLayer(layer => {
-            if (getProp(layer.feature.properties, ['nombre', 'name', 'departamento']) === sel) {
-                map.fitBounds(layer.getBounds(), { padding: [100, 100], maxZoom: 10 });
-                const v = getProp(layer.feature.properties, ['tasa_promedio', 'tasa', 'valor']) || 0;
-                document.getElementById('detailNome').innerHTML = `<b>Unidad:</b> ${sel}`;
-                document.getElementById('detailTaxa').innerHTML = `<b>Valor:</b> ${v}%`;
-                layer.setStyle({ weight: 4, color: '#FFD700' });
-                layer.openTooltip();
-            }
         });
     };
 
