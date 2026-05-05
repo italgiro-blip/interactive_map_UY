@@ -84,19 +84,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    // 4. LEYENDA (BAR SCALE) SIN MARCO Y ESTIRADA
-    function updateLegend() {
-        let container = document.querySelector('.legend-horizontal');
-        if (!container) {
-            container = L.DomUtil.create('div', 'legend-horizontal');
-            const lControl = L.control({ position: 'bottomright' });
-            lControl.onAdd = () => container;
-            lControl.addTo(map);
-        }
-
-        container.style.background = "transparent";
-        container.style.padding = "10px";
-
+    /function addLegend() {
+    // ...
+    for (let i = 0; i < currentBreaks.length - 1; i++) {
+        html += `
+            <div class="legend-item" ...>
+                <div class="legend-color" style="background:${currentPalette[i]}"></div>
+                <div class="legend-text">${currentBreaks[i].toFixed(1)}-${currentBreaks[i+1].toFixed(1)}%</div>
+            </div>`;
+    }
+    // ...
+}
         let html = `<div style="font-size: 13px; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000; margin-bottom: 12px;">ESCALA DE VALORES</div>
                     <div style="display: flex; align-items: flex-start;">`;
 
