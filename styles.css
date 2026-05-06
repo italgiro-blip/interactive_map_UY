@@ -103,8 +103,7 @@ select {
     flex-direction: column !important;
     align-items: center !important;
     bottom: 30px; /* Ajusta según tu diseño */
-    left: 50%;
-    width: 280px !important;
+    min-width: 280px !important;: 280px !important;
     border: 1px solid rgba(255,255,255,0.1) !important;
 }
 
