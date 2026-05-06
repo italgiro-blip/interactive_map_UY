@@ -96,23 +96,23 @@ select {
 /* --- LEYENDA HORIZONTAL (COLOR SCALE BAR) --- */
 .legend-horizontal { 
     background: rgba(10, 10, 10, 0.85) !important; /* Un poco más de transparencia para elegancia */
-    padding: 8px 12px !important; 
+    padding: 15px 20px !important; 
     border-radius: 4px;
     box-shadow: 0 0 15px rgba(0,0,0,0.5);
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    min-width: 250px !important;
+    min-width: 380px !important;
     border: 1px solid rgba(255,255,255,0.1) !important;
 }
 
 /* Título de la escala (ESCALA DE VALORES) */
 .legend-horizontal div:first-child {
-    font-size: 10px !important;
+    font-size: 14px !important;
     text-transform: uppercase !important;
     letter-spacing: 1.5px !important;
     color: #BBBBBB !important; /* Gris claro para que sea legible */
-    margin-bottom: 8px !important;
+    margin-bottom: 12px !important;
     font-weight: bold;
 }
 
@@ -132,7 +132,7 @@ select {
 
 /* El bloque de color propiamente dicho */
 .legend-color { 
-    height: 8px; /* Más fina */
+    height: 16px; /* Más fina */
     width: 100%;
     margin-bottom: 4px; 
     border: 1px solid rgba(255,255,255,0.1); 
@@ -141,7 +141,7 @@ select {
 /* Texto de los rangos numéricos */
 .legend-text { 
     color: #FFFFFF; 
-    font-size: 9px; 
+    font-size: 13px; 
     font-family: 'Monospace', sans-serif; /* Estilo técnico */
 }
 
