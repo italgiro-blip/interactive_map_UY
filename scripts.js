@@ -84,43 +84,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    // 4. LEYENDA (BAR SCALE) SIN MARCO Y ESTIRADA
-    function updateLegend() {
-        let container = document.querySelector('.legend-horizontal');
-        if (!container) {
-            container = L.DomUtil.create('div', 'legend-horizontal');
-            const lControl = L.control({ position: 'bottomright' });
-            lControl.onAdd = () => container;
-            lControl.addTo(map);
-        }
+  // 4. LEYENDA (COLOR SCALE BAR) - VERSIÓN REFINADA
+function updateLegend() {
+    let container = document.querySelector('.legend-horizontal');
+    
+    // Si el contenedor no existe, lo creamos y lo añadimos al mapa
+    if (!container) {
+        container = L.DomUtil.create('div', 'legend-horizontal');
+        const lControl = L.control({ position: 'bottomright' });
+        lControl.onAdd = () => container;
+        lControl.addTo(map);
+    }
 
-        container.style.background = "transparent";
-        container.style.padding = "10px";
+    // Estructura HTML que encaja con el nuevo CSS
+    let html = `<div>ESCALA DE VALORES</div>
+                <div class="legend-container">`;
 
-        let html = `<div style="font-size: 13px; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000; margin-bottom: 12px;">ESCALA DE VALORES</div>
-                    <div style="display: flex; align-items: flex-start;">`;
+    // El bucle genera los 5 bloques de color
+    for (let i = 0; i < 5; i++) {
+        const low = currentBreaks[i];
+        const high = currentBreaks[i+1];
+        const color = currentPalette[i];
 
-        for (let i = 0; i < 5; i++) {
-            const low = currentBreaks[i];
-            const high = currentBreaks[i+1];
-            const color = currentPalette[i];
-
-                html += `
-        <div id="leg-block-${i}" style="display: flex; flex-direction: column; align-items: center; width: 80px; position: relative;">
-            <div style="background:${color}; width: 100%; height: 25px; border: 0.5px solid rgba(255,255,255,0.4); transition: all 0.2s;"></div>
+        html += `
+        <div class="legend-item" id="leg-block-${i}">
+            <div class="legend-color" style="background:${color};"></div>
             
-            <span style="font-size: 13px; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000; margin-top: 5px;">
+            <span class="legend-text">
                 ${low.toFixed(1)}
             </span>
 
             ${i === 4 ? `
-            <span style="font-size: 13px; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000; margin-top: 5px; position: absolute; right: -15px; bottom: 0;">
+            <span class="legend-text" style="position: absolute; right: -15px; bottom: 0;">
                 ${high.toFixed(1)}
             </span>` : ''}
         </div>`;
-}
-        container.innerHTML = html + '</div>';
     }
+
+    // Cerramos el contenedor e inyectamos
+    container.innerHTML = html + '</div>';
+}
 
     // FUNCIONES DE SINCRONIZACIÓN (MAPA -> BARRA)
     window.resaltarBloqueLegenda = (index) => {
