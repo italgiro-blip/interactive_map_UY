@@ -84,44 +84,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    // 4. LEYENDA (BAR SCALE) SIN MARCO Y ESTIRADA
-    function updateLegend() {
-        let container = document.querySelector('.legend-horizontal');
-        if (!container) {
-            container = L.DomUtil.create('div', 'legend-horizontal');
-            const lControl = L.control({ position: 'bottomright' });
-            lControl.onAdd = () => container;
-            lControl.addTo(map);
+    // ==========================================
+// SECCIÓN: BARRA DE ESCALA (COLOR SCALE BAR)
+// ==========================================
+
+function addLegend() {
+    // 1. Limpieza: evita que se encimen varias leyendas
+    if (legend) map.removeControl(legend);
+
+    legend = L.control({position: 'bottomright'});
+
+    legend.onAdd = () => {
+        const div = L.DomUtil.create('div', 'legend-horizontal');
+        let html = '<div class="legend-container">';
+
+        // 2. Construcción: genera los bloques de color basados en los cortes estadísticos
+        for (let i = 0; i < currentBreaks.length - 1; i++) {
+            html += `
+                <div class="legend-item" onmouseover="highlightRange(${currentBreaks[i]}, ${currentBreaks[i+1]})" onmouseout="resetHighlight()">
+                    <div class="legend-color" style="background:${currentPalette[i]}"></div>
+                    <div class="legend-text">${currentBreaks[i].toFixed(1)}-${currentBreaks[i+1].toFixed(1)}%</div>
+                </div>`;
         }
 
-        container.style.background = "transparent";
-        container.style.padding = "10px";
+        div.innerHTML = html + '</div>';
+        return div;
+    };
 
-        let html = `<div style="font-size: 13px; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000; margin-bottom: 12px;">ESCALA DE VALORES</div>
-                    <div style="display: flex; align-items: flex-start;">`;
-
-        for (let i = 0; i < 5; i++) {
-            const low = currentBreaks[i];
-            const high = currentBreaks[i+1];
-            const color = currentPalette[i];
-
-                html += `
-        <div id="leg-block-${i}" style="display: flex; flex-direction: column; align-items: center; width: 80px; position: relative;">
-            <div style="background:${color}; width: 100%; height: 25px; border: 0.5px solid rgba(255,255,255,0.4); transition: all 0.2s;"></div>
-            
-            <span style="font-size: 13px; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000; margin-top: 5px;">
-                ${low.toFixed(1)}
-            </span>
-
-            ${i === 4 ? `
-            <span style="font-size: 13px; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000; margin-top: 5px; position: absolute; right: -15px; bottom: 0;">
-                ${high.toFixed(1)}
-            </span>` : ''}
-        </div>`;
+    legend.addTo(map);
 }
-        container.innerHTML = html + '</div>';
-    }
 
+// 3. Activadores: actualizan la barra cuando el usuario cambia la simbología
+paletteSelect.onchange = (e) => {
+    currentPalette = colorSchemes[e.target.value];
+    document.getElementById('btnCargarGeoJSON').click(); // Dispara la recarga de la escala y el mapa
+};
+
+classificationSelect.onchange = () => {
+    document.getElementById('btnCargarGeoJSON').click(); // Recalcula rangos y actualiza la escala
+};
     // FUNCIONES DE SINCRONIZACIÓN (MAPA -> BARRA)
     window.resaltarBloqueLegenda = (index) => {
         const block = document.getElementById(`leg-block-${index}`);
