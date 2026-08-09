@@ -131,6 +131,13 @@ select {
     align-items: center;
 }
 
+.legend-item span, .legend-item div {
+    font-size: 10px ; 
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
 /* El bloque de color propiamente dicho */
 .legend-color { 
     height: 14px; /* Más fina */
