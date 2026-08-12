@@ -173,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
         iconAnchor: [10, 10]
     });
 
+    // Arranca con opacidad 0 para evitar que aparezca un punto falso en el [0,0]
     let markerAvanzado = L.marker([0, 0], {
         icon: iconoAvanzado,
         opacity: 0, 
@@ -190,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const lon = position.coords.longitude;
                 const newLatLng = [lat, lon];
 
+                // Al recibir la señal real del GPS, hacemos visible el marcador
                 if (markerAvanzado.options.opacity === 0) {
                     markerAvanzado.setOpacity(1);
                 }
@@ -199,6 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 historialLinea.push(newLatLng);
                 polyline.setLatLngs(historialLinea);
 
+                // Centrar automáticamente la primera vez que se obtenga ubicación válida
                 if (!centradoGPSInicial) {
                     map.setView(newLatLng, 15);
                     centradoGPSInicial = true;
