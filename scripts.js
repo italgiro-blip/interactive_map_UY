@@ -166,13 +166,13 @@ document.addEventListener('DOMContentLoaded', () => {
         baseLayers[e.target.value].addTo(map);
     };
 
-  const iconoAvanzado = L.divIcon({
+    // --- 6. GEOLOCALIZACIÓN AVANZADA Y RUTA EN TIEMPO REAL ---
+    const iconoAvanzado = L.divIcon({
         className: 'mi-ubicacion-marker',
         iconSize: [20, 20],
-        iconAnchor: [10, 10] // Exactamente la mitad de iconSize para que no se mueva al hacer zoom
+        iconAnchor: [10, 10]
     });
 
-    // Arranca con opacidad 0 para evitar que aparezca un punto falso en el [0,0]
     let markerAvanzado = L.marker([0, 0], {
         icon: iconoAvanzado,
         opacity: 0, 
@@ -188,19 +188,26 @@ document.addEventListener('DOMContentLoaded', () => {
             (position) => {
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
+
+                // Filtro estricto anti-falsos (ignora 0,0 o nulos)
+                if (!lat || !lon || (lat === 0 && lon === 0)) return;
+
                 const newLatLng = [lat, lon];
 
-                // Al recibir la señal real del GPS, hacemos visible el marcador
+                // Si es la primera coordenada real, inicializamos limpio
                 if (markerAvanzado.options.opacity === 0) {
                     markerAvanzado.setOpacity(1);
+                    historialLinea = [newLatLng];
+                } else {
+                    const ultimoPunto = historialLinea[historialLinea.length - 1];
+                    if (!ultimoPunto || ultimoPunto[0] !== lat || ultimoPunto[1] !== lon) {
+                        historialLinea.push(newLatLng);
+                    }
                 }
 
                 markerAvanzado.setLatLng(newLatLng);
-
-                historialLinea.push(newLatLng);
                 polyline.setLatLngs(historialLinea);
 
-                // Centrar automáticamente la primera vez que se obtenga ubicación válida
                 if (!centradoGPSInicial) {
                     map.setView(newLatLng, 15);
                     centradoGPSInicial = true;
