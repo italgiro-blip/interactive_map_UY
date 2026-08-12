@@ -166,11 +166,10 @@ document.addEventListener('DOMContentLoaded', () => {
         baseLayers[e.target.value].addTo(map);
     };
 
-    // --- 6. GEOLOCALIZACIÓN AVANZADA Y RUTA EN TIEMPO REAL ---
-    const iconoAvanzado = L.divIcon({
+  const iconoAvanzado = L.divIcon({
         className: 'mi-ubicacion-marker',
         iconSize: [20, 20],
-        iconAnchor: [10, 10]
+        iconAnchor: [10, 10] // Exactamente la mitad de iconSize para que no se mueva al hacer zoom
     });
 
     // Arranca con opacidad 0 para evitar que aparezca un punto falso en el [0,0]
