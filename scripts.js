@@ -63,11 +63,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 layer.on({
                     mouseover: (e) => {
                         const index = getColorIndex(t, currentBreaks);
-                        resaltarBloqueLegenda(index); // Acción en la barra
+                        resaltarBloqueLegenda(index);
                         layer.setStyle({ weight: 3, color: '#FFD700', fillOpacity: 1 });
                     },
                     mouseout: (e) => {
-                        resetBloqueLegenda(); // Reset barra
+                        resetBloqueLegenda();
                         geojsonLayer.resetStyle(e.target);
                     },
                     click: () => {
@@ -80,56 +80,38 @@ document.addEventListener('DOMContentLoaded', () => {
         updateLegend();
     }
 
+    // 4. LEYENDA (COLOR SCALE BAR)
+    function updateLegend() {
+        let container = document.querySelector('.legend-horizontal');
+        
+        if (!container) {
+            container = L.DomUtil.create('div', 'legend-horizontal');
+            const lControl = L.control({ position: 'bottomright' });
+            lControl.onAdd = () => container;
+            lControl.addTo(map);
+        }
 
+        let html = `<div>ESCALA DE VALORES</div>
+                    <div class="legend-container">`;
 
+        for (let i = 0; i < 5; i++) {
+            const low = currentBreaks[i];
+            const high = currentBreaks[i+1];
+            const color = currentPalette[i];
 
-
-  // 4. LEYENDA (COLOR SCALE BAR) - VERSIÓN REFINADA
-function updateLegend() {
-    let container = document.querySelector('.legend-horizontal');
-    
-    // Si el contenedor no existe, lo creamos y lo añadimos al mapa
-    if (!container) {
-        container = L.DomUtil.create('div', 'legend-horizontal');
-        const lControl = L.control({ position: 'bottomright' });
-        lControl.onAdd = () => container;
-        lControl.addTo(map);
+            html += `
+            <div class="legend-item" id="leg-block-${i}">
+                <div class="legend-color" style="background:${color};"></div>
+                <span class="legend-text">${low.toFixed(1)}</span>
+                ${i === 4 ? `<span class="legend-text" style="position: absolute; right: -15px; bottom: 0;">${high.toFixed(1)}</span>` : ''}
+            </div>`;
+        }
+        container.innerHTML = html + '</div>';
     }
 
-    // Estructura HTML que encaja con el nuevo CSS
-    let html = `<div>ESCALA DE VALORES</div>
-                <div class="legend-container">`;
-
-    // El bucle genera los 5 bloques de color
-    for (let i = 0; i < 5; i++) {
-        const low = currentBreaks[i];
-        const high = currentBreaks[i+1];
-        const color = currentPalette[i];
-
-        html += `
-        <div class="legend-item" id="leg-block-${i}">
-            <div class="legend-color" style="background:${color};"></div>
-            
-            <span class="legend-text">
-                ${low.toFixed(1)}
-            </span>
-
-            ${i === 4 ? `
-            <span class="legend-text" style="position: absolute; right: -15px; bottom: 0;">
-                ${high.toFixed(1)}
-            </span>` : ''}
-        </div>`;
-    }
-
-    // Cerramos el contenedor e inyectamos
-    container.innerHTML = html + '</div>';
-}
-
-    // FUNCIONES DE SINCRONIZACIÓN (MAPA -> BARRA)
     window.resaltarBloqueLegenda = (index) => {
         const block = document.getElementById(`leg-block-${index}`);
         if (block) {
-            // Resalte sutil: Borde dorado y opacidad total
             block.firstElementChild.style.borderColor = "#FFD700";
             block.firstElementChild.style.borderWidth = "2px";
             block.firstElementChild.style.zIndex = "10";
@@ -183,4 +165,49 @@ function updateLegend() {
         Object.values(baseLayers).forEach(l => map.removeLayer(l));
         baseLayers[e.target.value].addTo(map);
     };
+
+    // --- 6. GEOLOCALIZACIÓN AVANZADA Y RUTA EN TIEMPO REAL ---
+    const iconoAvanzado = L.divIcon({
+        className: 'mi-ubicacion-marker',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
+    });
+
+    let markerAvanzado = L.marker([0, 0], {
+        icon: iconoAvanzado,
+        opacity: 0, 
+        zIndexOffset: 1000
+    }).addTo(map);
+
+    let historialLinea = [];
+    let polyline = L.polyline([], { color: '#3b82f6', weight: 4, opacity: 0.7 }).addTo(map);
+    let centradoGPSInicial = false;
+
+    if ("geolocation" in navigator) {
+        navigator.geolocation.watchPosition(
+            (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                const newLatLng = [lat, lon];
+
+                if (markerAvanzado.options.opacity === 0) {
+                    markerAvanzado.setOpacity(1);
+                }
+
+                markerAvanzado.setLatLng(newLatLng);
+
+                historialLinea.push(newLatLng);
+                polyline.setLatLngs(historialLinea);
+
+                if (!centradoGPSInicial) {
+                    map.setView(newLatLng, 15);
+                    centradoGPSInicial = true;
+                }
+            },
+            (error) => {
+                console.error("Error de GPS:", error.message);
+            },
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+        );
+    }
 });
